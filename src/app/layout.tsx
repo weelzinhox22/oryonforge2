@@ -5,7 +5,7 @@ import PWAInstallBanner from '@/components/PWAInstallBanner';
 
 export const metadata: Metadata = {
   title: 'Oryon Forge',
-  description: 'Plataforma fitness social â€” desafios, atividades e ranking entre amigos.',
+  description: 'Plataforma fitness social - desafios, atividades e ranking entre amigos.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,

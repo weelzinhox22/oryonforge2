@@ -152,6 +152,20 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
           <LogOut size={18} />
           {!isCollapsed && <span className="whitespace-nowrap">Encerrar Sessão</span>}
         </button>
+
+        {!isCollapsed && (
+          <div className="pt-4 pb-2 px-4 border-t border-white/[0.02]">
+            <a 
+              href="https://studiooryon.pro" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="group/studio flex flex-col gap-0.5 opacity-40 hover:opacity-100 transition-all"
+            >
+              <span className="text-[7px] font-black text-[#606070] uppercase tracking-[0.2em] group-hover/studio:text-[#CCCC00]">Desenvolvido por</span>
+              <span className="text-[10px] font-black text-white uppercase tracking-tighter italic group-hover/studio:translate-x-1 transition-transform">Studio Oryon</span>
+            </a>
+          </div>
+        )}
       </div>
     </motion.aside>
   );

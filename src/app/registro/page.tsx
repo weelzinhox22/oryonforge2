@@ -11,7 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import Toast from '@/components/Toast';
 import Sidebar from '@/components/Sidebar';
-import ShareCard from '@/components/ShareCard';
+import Sidebar from '@/components/Sidebar';
 import { ACTIVITIES } from '@/lib/activities';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { DotLottiePlayer } from '@dotlottie/react-player';
@@ -181,14 +181,14 @@ function RegistroActivityContent() {
     }
   }, [searchParams]);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
+  const [sportValues, setSportValues] = useState<Record<string, string>>({});
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [imageOffsets, setImageOffsets] = useState<number[]>([]); // 0 to 100 for Y-axis (top/bottom)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'error' | 'success' }>({
     isVisible: false, message: '', type: 'error'
   });
-  const [showShareCard, setShowShareCard] = useState(false);
-  const [shareData, setShareData] = useState<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -211,6 +211,7 @@ function RegistroActivityContent() {
     const newProofFiles = [...proofFiles, ...validFiles];
     setProofFiles(newProofFiles);
     setPreviewUrls(newProofFiles.map(file => URL.createObjectURL(file)));
+    setImageOffsets([...imageOffsets, ...validFiles.map(() => 50)]); // Default to center (50%)
   };
 
   const removeFile = (index: number, e: React.MouseEvent) => {
@@ -224,6 +225,10 @@ function RegistroActivityContent() {
     const newUrls = [...previewUrls];
     newUrls.splice(index, 1);
     setPreviewUrls(newUrls);
+
+    const newOffsets = [...imageOffsets];
+    newOffsets.splice(index, 1);
+    setImageOffsets(newOffsets);
   };
 
   const generateGridImage = async (files: File[]): Promise<Blob> => {
@@ -248,29 +253,33 @@ function RegistroActivityContent() {
     canvas.width = size;
     canvas.height = size;
 
-    const drawImageCover = (img: HTMLImageElement, x: number, y: number, w: number, h: number) => {
+    const drawImageCover = (img: HTMLImageElement, x: number, y: number, w: number, h: number, offsetYPercent: number = 50) => {
       const imgRatio = img.width / img.height;
       const targetRatio = w / h;
       let sx, sy, sw, sh;
 
       if (imgRatio > targetRatio) {
+        // Image is wider than target
         sh = img.height;
         sw = sh * targetRatio;
         sx = (img.width - sw) / 2;
         sy = 0;
       } else {
+        // Image is taller than target
         sw = img.width;
         sh = sw / targetRatio;
         sx = 0;
-        sy = (img.height - sh) / 2;
+        // Apply Y offset
+        const totalSlack = img.height - sh;
+        sy = (totalSlack * offsetYPercent) / 100;
       }
       ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
     };
 
     if (images.length === 2) {
       // 2 images: Side by side (vertical split)
-      drawImageCover(images[0], 0, 0, size / 2 - 2, size);
-      drawImageCover(images[1], size / 2 + 2, 0, size / 2 - 2, size);
+      drawImageCover(images[0], 0, 0, size / 2 - 2, size, imageOffsets[0]);
+      drawImageCover(images[1], size / 2 + 2, 0, size / 2 - 2, size, imageOffsets[1]);
       // Divider
       ctx.fillStyle = '#000000';
       ctx.fillRect(size / 2 - 2, 0, 4, size);
@@ -279,17 +288,13 @@ function RegistroActivityContent() {
       const half = size / 2;
       const gap = 2;
       
-      drawImageCover(images[0], 0, 0, half - gap, half - gap);
-      drawImageCover(images[1], half + gap, 0, half - gap, half - gap);
-      drawImageCover(images[2], 0, half + gap, half - gap, half - gap);
+      drawImageCover(images[0], 0, 0, half - gap, half - gap, imageOffsets[0]);
+      drawImageCover(images[1], half + gap, 0, half - gap, half - gap, imageOffsets[1]);
+      drawImageCover(images[2], 0, half + gap, half - gap, half - gap, imageOffsets[2]);
       
       if (images.length === 4) {
-        drawImageCover(images[3], half + gap, half + gap, half - gap, half - gap);
+        drawImageCover(images[3], half + gap, half + gap, half - gap, half - gap, imageOffsets[3]);
       } else {
-        // If 3 images, fill the 4th with background or a logo? 
-        // User asked for "máximo 4", let's leave 4th black or stretch 3rd?
-        // Usually 3 images in a grid looks best with one large and two small, 
-        // but let's stick to simple 2x2 with 4th empty for now or just fill with black.
         ctx.fillStyle = '#050505';
         ctx.fillRect(half + gap, half + gap, half - gap, half - gap);
       }
@@ -365,29 +370,13 @@ function RegistroActivityContent() {
         .eq('user_id', session.user.id)
         .eq('group_id', groupId)
         .gte('created_at', today.toISOString());
-        
+
       const currentPoints = todayLogs?.reduce((sum, log) => sum + (log.points || 0), 0) || 0;
       
-      if (currentPoints >= 4) {
-        setToast({ isVisible: true, message: 'Você já atingiu o limite de 4 pontos hoje!', type: 'error' });
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (currentPoints + selectedSports.length > 4) {
-        setToast({ 
-          isVisible: true, 
-          message: `Limite excedido! Você só pode registrar mais ${4 - currentPoints} pontos hoje.`, 
-          type: 'error' 
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
       // 1. Detect Device Info
       const deviceInfo = (navigator as any).userAgentData?.platform || navigator.platform || 'Unknown Device';
 
-      // 2. Generate Grid Image if multiple
+      // 2. Generate Grid Image
       const finalBlob = await generateGridImage(proofFiles);
       const fileExt = proofFiles[0].name.split('.').pop();
       const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
@@ -403,34 +392,46 @@ function RegistroActivityContent() {
         .from('proofs')
         .getPublicUrl(filePath);
 
-      // 3. Insert Records for each selected sport
-      const inserts = selectedSports.map(sportId => ({
-        user_id: session.user.id,
-        group_id: groupId,
-        activity_type: sportId,
-        points: 1,
-        proof_url: publicUrl,
-        device_info: deviceInfo,
-      }));
-      const { error } = await supabase.from('activity_logs').insert(inserts);
+      // 3. Calculate points per activity
+      const logInserts = selectedSports.map(sportId => {
+        const activity = ACTIVITIES.find(a => a.id === sportId);
+        const value = parseFloat(sportValues[sportId] || '0');
+        let points = 1;
+
+        if (activity) {
+          points = value / activity.factor;
+        }
+
+        return {
+          user_id: session.user.id,
+          group_id: groupId,
+          activity_type: sportId,
+          points: Number(points.toFixed(2)),
+          proof_url: publicUrl,
+          device_info: deviceInfo,
+        };
+      });
+
+      const totalPointsToAward = logInserts.reduce((sum, log) => sum + log.points, 0);
+
+      if (currentPoints + totalPointsToAward > 4.01) { // Small buffer for float precision
+        setToast({ 
+          isVisible: true, 
+          message: `Limite excedido! Você só pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
+          type: 'error' 
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { error } = await supabase.from('activity_logs').insert(logInserts);
 
       if (error) throw error;
 
-      setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas!`, type: 'success' });
+      setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas! Total: ${totalPointsToAward.toFixed(2)} pts`, type: 'success' });
       
-      setShareData({
-        type: 'activity',
-        title: selectedSports.length > 1 ? 'Múltiplas Atividades' : ACTIVITIES.find(a => a.id === selectedSports[0])?.name || 'Atividade',
-        subtitle: 'Esforço Validado',
-        value: selectedSports.length,
-        imageUrl: publicUrl,
-        username: userProfile?.username || 'Membro',
-        date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase()
-      });
-
-      // Delay cinematico para a animação de sucesso completar
       await new Promise(r => setTimeout(r, 1500));
-      setShowShareCard(true);
+      router.push(`/dashboard/${groupId}`);
       
     } catch (err: any) {
       setToast({ isVisible: true, message: err.message || 'Erro ao registrar.', type: 'error' });
@@ -507,6 +508,7 @@ function RegistroActivityContent() {
               </div>
             </section>
 
+            {/* Step 1: Activity Selection */}
             <section>
               <div className="flex items-center gap-3 mb-8">
                 <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 1: Modalidade</h2>
@@ -534,13 +536,56 @@ function RegistroActivityContent() {
                 ))}
               </div>
             </section>
+
+            {selectedSports.length > 0 && (
+              <section>
+                <div className="flex items-center gap-3 mb-8">
+                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do Esforço</h2>
+                  <div className="h-px flex-1 bg-white/5" />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {selectedSports.map((sportId) => {
+                    const activity = ACTIVITIES.find(a => a.id === sportId);
+                    return (
+                      <div key={sportId} className="bg-[#050505] border border-white/5 rounded-3xl p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
+                            {activity && ICON_MAP[activity.id] && (() => {
+                              const Icon = ICON_MAP[activity.id];
+                              return <Icon size={18} className="text-[#CCCC00]" />;
+                            })()}
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-white uppercase tracking-wider">{activity?.name}</p>
+                            <p className="text-[10px] text-[#606070] font-bold uppercase tracking-widest">{activity?.description}</p>
+                          </div>
+                        </div>
+                        <div className="relative">
+                          <input 
+                            type="number"
+                            placeholder={`Qtd em ${activity?.unit}`}
+                            value={sportValues[sportId] || ''}
+                            onChange={(e) => setSportValues({ ...sportValues, [sportId]: e.target.value })}
+                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-black"
+                          />
+                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#303035] uppercase tracking-widest">
+                            {activity?.unit}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </div>
 
           {/* Action / Upload Area */}
           <div className="lg:col-span-4 space-y-10">
             <section>
               <div className="flex items-center gap-3 mb-8">
-                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Comprovação</h2>
+                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: Comprovação</h2>
                 <div className="h-px flex-1 bg-white/5" />
               </div>
               
@@ -576,13 +621,39 @@ function RegistroActivityContent() {
                             <div key={url} className={`relative rounded-xl overflow-hidden group/item ${
                               previewUrls.length === 3 && idx === 0 ? 'row-span-2 h-full' : 'h-full'
                             }`}>
-                              <img src={url} alt="Preview" className="w-full h-full object-cover" />
-                              <button 
-                                onClick={(e) => removeFile(idx, e)}
-                                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity backdrop-blur-md"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                              <img 
+                                src={url} 
+                                alt="Preview" 
+                                className="w-full h-full object-cover transition-transform duration-500" 
+                                style={{ objectPosition: `50% ${imageOffsets[idx]}%` }}
+                              />
+                              
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                <div className="absolute bottom-4 left-4 right-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">Ajustar Enquadramento</span>
+                                    <button 
+                                      onClick={(e) => removeFile(idx, e)}
+                                      className="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center backdrop-blur-md border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  </div>
+                                  <input 
+                                    type="range"
+                                    min="0"
+                                    max="100"
+                                    value={imageOffsets[idx]}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={(e) => {
+                                      const newOffsets = [...imageOffsets];
+                                      newOffsets[idx] = parseInt(e.target.value);
+                                      setImageOffsets(newOffsets);
+                                    }}
+                                    className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#CCCC00]"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>

@@ -1147,6 +1147,19 @@ export default function LobbyView({
           </div>
         </div>
 
+        {/* Brand Credit Footer */}
+        <footer className="mt-20 pb-12 flex flex-col items-center justify-center gap-2 opacity-30 hover:opacity-100 transition-opacity">
+          <a 
+            href="https://studiooryon.pro" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center gap-1 group/footer"
+          >
+            <span className="text-[8px] font-black text-[#606070] uppercase tracking-[0.3em] group-hover/footer:text-[#CCCC00] transition-colors">Desenvolvido por</span>
+            <span className="text-xs font-black text-white uppercase tracking-tighter italic group-hover/footer:scale-105 transition-transform">Studio Oryon</span>
+          </a>
+          <p className="text-[8px] text-[#303035] font-bold uppercase tracking-widest">© 2026 Oryon Forge</p>
+        </footer>
       </main>
 
     </motion.div>
