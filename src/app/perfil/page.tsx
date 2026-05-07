@@ -113,7 +113,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateAvatar = async (avatarPath: string) => {
+  const handleUpdateAvatar = async (avatarPath: string, category: 'male' | 'female') => {
     setSelectedAvatar(avatarPath);
     setIsUpdating(true);
     
@@ -123,13 +123,25 @@ export default function ProfilePage() {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ avatar_url: avatarPath })
+        .update({ 
+          avatar_url: avatarPath,
+          gender: category
+        })
         .eq('id', session.user.id);
 
       if (error) throw error;
 
-      setToast({ isVisible: true, message: 'Avatar atualizado com sucesso!', type: 'success' });
-      setUserProfile({ ...userProfile, avatar_url: avatarPath });
+      setToast({ isVisible: true, message: 'Avatar e identidade atualizados!', type: 'success' });
+      setUserProfile({ ...userProfile, avatar_url: avatarPath, gender: category });
+      
+      // Refresh titles if gender changed
+      const { data: updatedProfile } = await supabase
+        .from('profile_display_with_titles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      if (updatedProfile) setUserProfile(updatedProfile);
+
     } catch (error) {
       console.error('Erro ao atualizar avatar:', error);
       setToast({ isVisible: true, message: 'Erro ao atualizar avatar.', type: 'error' });
@@ -275,7 +287,7 @@ export default function ProfilePage() {
                 return (
                   <button
                     key={avatarPath}
-                    onClick={() => handleUpdateAvatar(avatarPath)}
+                    onClick={() => handleUpdateAvatar(avatarPath, avatarCategory)}
                     className={`relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden border-2 transition-all duration-300 active:scale-95 group ${
                       isSelected 
                         ? 'border-[#CCCC00] shadow-[0_0_20px_rgba(204,204,0,0.2)]' 

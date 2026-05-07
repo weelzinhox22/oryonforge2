@@ -156,7 +156,10 @@ export default function GroupDashboardPage() {
         });
 
         setDailyPoints(myTodayPoints);
-        setRanking(Object.values(scores).sort((a, b) => b.points - a.points));
+        setRanking(Object.values(scores).sort((a, b) => {
+          if (b.points !== a.points) return b.points - a.points;
+          return a.username.localeCompare(b.username); // Tie-breaker: Ange (A) stays before Welzinho (W)
+        }));
       }
 
       // Group Activity Feed
