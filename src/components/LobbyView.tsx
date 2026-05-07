@@ -319,7 +319,7 @@ export default function LobbyView({
           
           {/* PERFORMANCE HUB (HERO) */}
           <section className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div id="tutorial-xp" className="lg:col-span-7 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/[0.05] rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
+            <div id="tutorial-xp" className="lg:col-span-8 bg-[#0A0A0A]/60 backdrop-blur-3xl border border-white/[0.05] rounded-[3rem] p-6 md:p-10 flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group">
                {/* Ambient Glow */}
                <div className="absolute -top-24 -left-24 w-64 h-64 bg-[#CCCC00]/5 rounded-full blur-[100px] pointer-events-none group-hover:bg-[#CCCC00]/10 transition-all duration-700" />
                
@@ -359,13 +359,18 @@ export default function LobbyView({
             </div>
 
             {/* QUICK ACHIEVEMENTS SCROLL */}
-            <div className="lg:col-span-5 bg-[#0A0A0A]/40 backdrop-blur-2xl border border-white/[0.05] rounded-[3rem] p-8 flex flex-col justify-between">
+            <div className="lg:col-span-4 bg-[#0A0A0A]/40 backdrop-blur-2xl border border-white/[0.05] rounded-[3rem] p-8 flex flex-col justify-between">
                <div className="flex items-center justify-between mb-6 px-2">
                   <h3 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em]">Últimas Conquistas</h3>
-                  <button className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest hover:underline transition-all">Ver Todas</button>
+                  <button 
+                    onClick={() => router.push('/perfil/conquistas')}
+                    className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest hover:underline transition-all"
+                  >
+                    Ver Todas
+                  </button>
                </div>
 
-               <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+               <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
                   {userAchievements.length > 0 ? (
                     userAchievements.map((ua, i) => (
                       <motion.div 
@@ -373,9 +378,9 @@ export default function LobbyView({
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: i * 0.1 }}
-                        className="w-24 shrink-0 flex flex-col items-center gap-3"
+                        className="w-20 shrink-0 flex flex-col items-center gap-2"
                       >
-                         <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 flex items-center justify-center p-3 group relative cursor-pointer">
+                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 flex items-center justify-center p-2.5 group relative cursor-pointer">
                             <img 
                               src={ua.achievements?.icon_url} 
                               alt={ua.achievements?.title} 
@@ -400,13 +405,49 @@ export default function LobbyView({
                     { title: 'Projeto Verão', icon: '/conquistas/projetoverao.png' },
                     { title: 'Modo Caverna', icon: '/conquistas/modocaverna.png' }
                   ].map((ex, i) => (
-                    <div key={i} className="w-24 shrink-0 flex flex-col items-center gap-3 opacity-20 filter grayscale">
-                       <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center p-4">
+                    <div key={i} className="w-20 shrink-0 flex flex-col items-center gap-2 opacity-20 filter grayscale">
+                       <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center p-3">
                           <img src={ex.icon} className="w-full h-full object-contain" />
                        </div>
                     </div>
                   ))}
                </div>
+            </div>
+          </section>
+
+          {/* QUICK ACTIONS - Moved up per user request */}
+          <section className="space-y-4">
+            <h2 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em] ml-2">Gestão de Unidade</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: 'Criar Grupo', icon: Plus, onClick: () => setView('create'), primary: true, desc: 'Novo desafio' },
+                { label: 'Entrar', icon: Key, onClick: () => setView('join'), desc: 'Via código' },
+              ].map((action, i) => (
+                <button 
+                  key={action.label}
+                  onClick={action.onClick} 
+                  className={`flex items-center gap-3 p-3.5 rounded-2xl border transition-all duration-300 group ${
+                    action.primary 
+                      ? 'bg-[#CCCC00] border-[#CCCC00] text-black shadow-lg shadow-[#CCCC00]/10' 
+                      : 'bg-[#0A0A0A] border-white/5 hover:border-white/20'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
+                    action.primary ? 'bg-black/10 text-black' : 'bg-white/5 text-[#606070]'
+                  }`}>
+                    <action.icon size={16} strokeWidth={2.5} />
+                  </div>
+                  <div className="text-left">
+                    <span className={`block text-[9px] font-black uppercase tracking-tight leading-none ${action.primary ? 'text-black' : 'text-white'}`}>
+                      {action.label}
+                    </span>
+                    <span className={`text-[7px] font-bold uppercase tracking-widest ${action.primary ? 'text-black/60' : 'text-[#303035]'}`}>
+                      {action.desc}
+                    </span>
+                  </div>
+                  <ChevronRight size={14} className={`ml-auto ${action.primary ? 'text-black/40' : 'text-[#202025]'}`} />
+                </button>
+              ))}
             </div>
           </section>
           
@@ -564,33 +605,6 @@ export default function LobbyView({
             </section>
           </div>
 
-          {/* Quick Actions Grid (Updated) */}
-          <section>
-            <h2 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em] mb-6">Ações Rápidas</h2>
-            <div className="grid grid-cols-2 gap-5">
-              {[
-                { label: 'Criar Grupo', icon: Plus, onClick: () => setView('create'), primary: true },
-                { label: 'Entrar com Código', icon: Key, onClick: () => setView('join') },
-              ].map((action, i) => (
-                <button 
-                  key={action.label}
-                  onClick={action.onClick} 
-                  className={`flex items-center gap-4 p-5 rounded-3xl border transition-all duration-300 group ${
-                    action.primary 
-                      ? 'bg-[#0A0A0A] border-white/5 hover:border-[#CCCC00]/40' 
-                      : 'bg-[#0A0A0A] border-white/5 hover:border-white/20'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:scale-110 ${
-                    action.primary ? 'bg-[#CCCC00]/10 text-[#CCCC00]' : 'bg-white/5 text-[#606070]'
-                  }`}>
-                    <action.icon size={16} />
-                  </div>
-                  <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{action.label}</span>
-                </button>
-              ))}
-            </div>
-          </section>
 
           {/* WHY ORYON? (MARKETING) */}
           <section className="space-y-12">
