@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Activity, Trophy,
   Plus, Target, Medal, UserPlus,
-  Image as ImageIcon, Edit2, Save, X, Settings
+  Image as ImageIcon, Edit2, Save, X, Settings, Clock
 } from 'lucide-react';
 import { Sora } from 'next/font/google';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, addDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
 import { DotLottiePlayer } from '@dotlottie/react-player';
@@ -108,6 +108,15 @@ export default function DashboardView({
           </div>
 
           <NotificationCenter />
+
+          {['admin', 'manager'].includes(userRole) && (
+            <button
+              onClick={() => router.push(`/dashboard/${activeGroup.id}/configuracoes`)}
+              className="flex md:hidden p-2 rounded-full bg-white/5 border border-white/10 text-[#808090] active:scale-90"
+            >
+              <Settings size={18} />
+            </button>
+          )}
 
           <button
             onClick={() => router.push(`/dashboard/${activeGroup.id}/conquistas`)}
@@ -212,6 +221,19 @@ export default function DashboardView({
               </div>
 
               <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+                {/* Challenge Info Card */}
+                {activeGroup?.created_at && (
+                  <div className="px-6 py-4 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md flex flex-col items-center md:items-start gap-1">
+                    <div className="flex items-center gap-2 text-[#606070]">
+                      <Clock size={12} />
+                      <span className="text-[9px] font-black uppercase tracking-widest">Término do Desafio</span>
+                    </div>
+                    <span className="text-xs font-black text-[#CCCC00] uppercase italic">
+                      {format(addDays(new Date(activeGroup.created_at), activeGroup.period_days || 45), "dd 'de' MMMM", { locale: ptBR })}
+                    </span>
+                  </div>
+                )}
+
                 {(userRole === 'admin' || userRole === 'moderator') && (
                   <button
                     onClick={onCopyInvite}

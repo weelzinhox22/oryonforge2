@@ -181,8 +181,8 @@ function RegistroActivityContent() {
     }
   }, [searchParams]);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [proofFiles, setProofFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'error' | 'success' }>({
     isVisible: false, message: '', type: 'error'
@@ -191,21 +191,118 @@ function RegistroActivityContent() {
   const [shareData, setShareData] = useState<any>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setToast({ isVisible: true, message: 'Arquivo muito grande (Máx: 5MB).', type: 'error' });
-        return;
-      }
-      setProofFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const totalFiles = proofFiles.length + files.length;
+    if (totalFiles > 4) {
+      setToast({ isVisible: true, message: 'Máximo de 4 fotos permitido.', type: 'error' });
+      return;
     }
+
+    const validFiles = files.filter(file => {
+      if (file.size > 5 * 1024 * 1024) {
+        setToast({ isVisible: true, message: `O arquivo ${file.name} é muito grande (Máx: 5MB).`, type: 'error' });
+        return false;
+      }
+      return true;
+    });
+
+    const newProofFiles = [...proofFiles, ...validFiles];
+    setProofFiles(newProofFiles);
+    setPreviewUrls(newProofFiles.map(file => URL.createObjectURL(file)));
   };
 
-  const removeFile = (e: React.MouseEvent) => {
+  const removeFile = (index: number, e: React.MouseEvent) => {
     e.preventDefault();
-    setProofFile(null);
-    setPreviewUrl(null);
+    const newFiles = [...proofFiles];
+    newFiles.splice(index, 1);
+    setProofFiles(newFiles);
+    
+    // Revoke old URL to avoid memory leak
+    URL.revokeObjectURL(previewUrls[index]);
+    const newUrls = [...previewUrls];
+    newUrls.splice(index, 1);
+    setPreviewUrls(newUrls);
+  };
+
+  const generateGridImage = async (files: File[]): Promise<Blob> => {
+    if (files.length === 1) return files[0];
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Falha ao inicializar canvas');
+
+    // Load all images
+    const images = await Promise.all(files.map(file => {
+      return new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }));
+
+    // Target size for the grid (square)
+    const size = 1080;
+    canvas.width = size;
+    canvas.height = size;
+
+    const drawImageCover = (img: HTMLImageElement, x: number, y: number, w: number, h: number) => {
+      const imgRatio = img.width / img.height;
+      const targetRatio = w / h;
+      let sx, sy, sw, sh;
+
+      if (imgRatio > targetRatio) {
+        sh = img.height;
+        sw = sh * targetRatio;
+        sx = (img.width - sw) / 2;
+        sy = 0;
+      } else {
+        sw = img.width;
+        sh = sw / targetRatio;
+        sx = 0;
+        sy = (img.height - sh) / 2;
+      }
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    };
+
+    if (images.length === 2) {
+      // 2 images: Side by side (vertical split)
+      drawImageCover(images[0], 0, 0, size / 2 - 2, size);
+      drawImageCover(images[1], size / 2 + 2, 0, size / 2 - 2, size);
+      // Divider
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(size / 2 - 2, 0, 4, size);
+    } else {
+      // 3 or 4 images: 2x2 grid
+      const half = size / 2;
+      const gap = 2;
+      
+      drawImageCover(images[0], 0, 0, half - gap, half - gap);
+      drawImageCover(images[1], half + gap, 0, half - gap, half - gap);
+      drawImageCover(images[2], 0, half + gap, half - gap, half - gap);
+      
+      if (images.length === 4) {
+        drawImageCover(images[3], half + gap, half + gap, half - gap, half - gap);
+      } else {
+        // If 3 images, fill the 4th with background or a logo? 
+        // User asked for "máximo 4", let's leave 4th black or stretch 3rd?
+        // Usually 3 images in a grid looks best with one large and two small, 
+        // but let's stick to simple 2x2 with 4th empty for now or just fill with black.
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(half + gap, half + gap, half - gap, half - gap);
+      }
+
+      // Dividers
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(half - gap, 0, gap * 2, size);
+      ctx.fillRect(0, half - gap, size, gap * 2);
+    }
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9);
+    });
   };
 
   const handleSignOut = async () => {
@@ -217,7 +314,7 @@ function RegistroActivityContent() {
       setToast({ isVisible: true, message: 'Selecione pelo menos uma atividade.', type: 'error' });
       return;
     }
-    if (!proofFile) {
+    if (proofFiles.length === 0) {
       setToast({ isVisible: true, message: 'A comprovação visual é obrigatória.', type: 'error' });
       return;
     }
@@ -290,14 +387,15 @@ function RegistroActivityContent() {
       // 1. Detect Device Info
       const deviceInfo = (navigator as any).userAgentData?.platform || navigator.platform || 'Unknown Device';
 
-      // 2. Upload File
-      const fileExt = proofFile.name.split('.').pop();
+      // 2. Generate Grid Image if multiple
+      const finalBlob = await generateGridImage(proofFiles);
+      const fileExt = proofFiles[0].name.split('.').pop();
       const fileName = `${session.user.id}/${Date.now()}.${fileExt}`;
       const filePath = `activity-proofs/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('proofs')
-        .upload(filePath, proofFile);
+        .upload(filePath, finalBlob);
 
       if (uploadError) throw uploadError;
 
@@ -455,27 +553,47 @@ function RegistroActivityContent() {
                   <input 
                     type="file" 
                     accept="image/*" 
+                    multiple
                     className="hidden" 
                     onChange={handleFileChange}
+                    disabled={proofFiles.length >= 4}
                   />
                   
                   <AnimatePresence mode="wait">
-                    {previewUrl ? (
+                    {previewUrls.length > 0 ? (
                       <motion.div 
                         key="preview"
                         initial={{ opacity: 0, scale: 1.1 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.4 }}
-                        className="relative w-full h-full"
+                        className="relative w-full h-full p-2"
                       >
-                        <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
-                          <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20">
-                            <Camera size={28} />
-                          </div>
-                          <span className="text-[12px] font-black text-white truncate">{userProfile?.username || 'Membro'}</span>
+                        <div className={`grid h-full gap-2 ${
+                          previewUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
+                        }`}>
+                          {previewUrls.map((url, idx) => (
+                            <div key={url} className={`relative rounded-xl overflow-hidden group/item ${
+                              previewUrls.length === 3 && idx === 0 ? 'row-span-2 h-full' : 'h-full'
+                            }`}>
+                              <img src={url} alt="Preview" className="w-full h-full object-cover" />
+                              <button 
+                                onClick={(e) => removeFile(idx, e)}
+                                className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity backdrop-blur-md"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
+                        {proofFiles.length < 4 && (
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
+                            <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20">
+                              <Camera size={28} />
+                            </div>
+                            <span className="text-[12px] font-black text-white uppercase tracking-widest">Adicionar mais fotos ({proofFiles.length}/4)</span>
+                          </div>
+                        )}
                       </motion.div>
                     ) : (
                       <motion.div 
@@ -487,23 +605,14 @@ function RegistroActivityContent() {
                         <div className="w-24 h-24 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/30 transition-all duration-700">
                           <UploadCloud size={40} strokeWidth={1} className="text-[#606070] group-hover:text-[#CCCC00] group-hover:animate-bounce" />
                         </div>
-                        <h3 className="text-lg font-black text-white mb-2">Enviar Evidência</h3>
+                        <h3 className="text-lg font-black text-white mb-2">Enviar Evidências</h3>
                         <p className="text-xs text-[#606070] font-medium leading-relaxed max-w-[200px]">
-                          Anexe o print do seu treino ou foto do painel (Máximo 5MB)
+                          Selecione até 4 fotos para criar um grid automático de treino.
                         </p>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </label>
-
-                {previewUrl && (
-                  <button 
-                    onClick={removeFile}
-                    className="absolute -top-3 -right-3 w-12 h-12 rounded-2xl bg-[#050505] border border-red-500/30 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-2xl z-20 group"
-                  >
-                    <Trash2 size={18} className="group-hover:rotate-12 transition-transform" />
-                  </button>
-                )}
               </div>
             </section>
 
@@ -519,7 +628,7 @@ function RegistroActivityContent() {
 
               <button
                 onClick={handleSubmit}
-                disabled={selectedSports.length === 0 || !proofFile || isSubmitting || !groupId}
+                disabled={selectedSports.length === 0 || proofFiles.length === 0 || isSubmitting || !groupId}
                 className="w-full py-6 rounded-2xl font-black text-sm uppercase tracking-[0.4em] bg-[#CCCC00] text-black shadow-[0_20px_40px_rgba(204,204,0,0.2)] disabled:opacity-10 disabled:shadow-none hover:bg-[#b3b300] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 group relative overflow-hidden"
               >
                 {isSubmitting ? (

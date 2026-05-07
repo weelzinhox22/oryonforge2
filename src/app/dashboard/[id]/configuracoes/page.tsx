@@ -3,21 +3,26 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ChevronLeft, Settings, Users, 
-  Target, Shield, Trash2, 
-  Check, Save, AlertTriangle,
-  ChevronDown, Activity, Info
+  ChevronLeft, Calendar, Trophy, 
+  Users, Save, AlertTriangle, Clock,
+  UserCheck, Shield, ShieldAlert,
+  Image as ImageIcon
 } from 'lucide-react';
-import { Sora, Outfit } from 'next/font/google';
+import { Outfit, Sora } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
 import BottomNav from '@/components/BottomNav';
 import Toast from '@/components/Toast';
-import { DotLottiePlayer } from '@dotlottie/react-player';
+import { addDays, format, differenceInDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
-const sora = Sora({ subsets: ['latin'], weight: ['400', '600', '700', '800'] });
 const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '500', '700', '900'] });
+const sora = Sora({ subsets: ['latin'], weight: ['600', '700', '800'] });
+
+const GROUP_AVATARS = [
+  'group_icon_1_1.png', 'group_icon_1_2.png', 'group_icon_2_1.png', 'group_icon_2_2.png',
+  'group_icon_3_1.png', 'group_icon_3_2.png', 'group_icon_4_1.png', 'group_icon_5_1.png'
+];
 
 export default function GroupSettingsPage() {
   const router = useRouter();
@@ -26,32 +31,32 @@ export default function GroupSettingsPage() {
   const supabase = createClient();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [group, setGroup] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    daily_points_limit: 4,
-    status: 'active',
-    avatar_url: ''
-  });
+  const [activeGroup, setActiveGroup] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('member');
+  const [members, setMembers] = useState<any[]>([]);
+  
+  // Form State
+  const [groupName, setGroupName] = useState('');
+  const [groupDescription, setGroupDescription] = useState('');
+  const [groupAvatar, setGroupAvatar] = useState('');
+  const [periodDays, setPeriodDays] = useState<number>(45);
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   useEffect(() => {
-    const fetchGroupData = async () => {
+    const fetchData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
         return;
       }
 
+      // Fetch group and current user role
       const { data: membership } = await supabase
         .from('group_members')
         .select('role, groups (*)')
-        .eq('group_id', groupId)
         .eq('user_id', session.user.id)
+        .eq('group_id', groupId)
         .single();
 
       if (!membership || !['admin', 'manager'].includes(membership.role)) {
@@ -59,342 +64,277 @@ export default function GroupSettingsPage() {
         return;
       }
 
-      setIsAdmin(membership.role === 'admin');
-      const groupData = membership.groups as any;
-      setGroup(groupData);
-      setFormData({
-        name: groupData.name,
-        description: groupData.description || '',
-        daily_points_limit: groupData.daily_points_limit || 4,
-        status: groupData.status || 'active',
-        avatar_url: groupData.avatar_url || ''
-      });
+      const group = membership.groups;
+      setActiveGroup(group);
+      setUserRole(membership.role);
+      setGroupName(group.name);
+      setGroupDescription(group.description || '');
+      setGroupAvatar(group.avatar_url || '');
+      setPeriodDays(group.period_days || 45);
+
+      // Fetch all members
+      const { data: allMembers } = await supabase
+        .from('group_members')
+        .select('user_id, role, joined_at, profiles(username, avatar_url)')
+        .eq('group_id', groupId)
+        .order('joined_at', { ascending: true });
+
+      setMembers(allMembers || []);
       setIsLoading(false);
     };
 
-    fetchGroupData();
-  }, [groupId, supabase, router]);
+    fetchData();
+  }, [groupId, router, supabase]);
 
-  const handleUpdateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateSettings = async () => {
     setIsUpdating(true);
-    
     try {
       const { error } = await supabase
         .from('groups')
-        .update(formData)
+        .update({
+          name: groupName,
+          description: groupDescription,
+          period_days: periodDays,
+          avatar_url: groupAvatar
+        })
         .eq('id', groupId);
 
       if (error) throw error;
 
-      setToast({ isVisible: true, message: 'Configurações sincronizadas!', type: 'success' });
-    } catch (error) {
-      console.error('Erro ao atualizar grupo:', error);
-      setToast({ isVisible: true, message: 'Falha na sincronização neural.', type: 'error' });
+      setToast({ isVisible: true, message: 'Configurações atualizadas com sucesso!', type: 'success' });
+      
+      setActiveGroup({
+        ...activeGroup,
+        name: groupName,
+        description: groupDescription,
+        period_days: periodDays,
+        avatar_url: groupAvatar
+      });
+    } catch (error: any) {
+      setToast({ isVisible: true, message: error.message || 'Erro ao atualizar.', type: 'error' });
     } finally {
       setIsUpdating(false);
     }
   };
 
+  const handleToggleAdmin = async (targetUserId: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'member' : 'admin';
+    try {
+      const { error } = await supabase
+        .from('group_members')
+        .update({ role: newRole })
+        .eq('group_id', groupId)
+        .eq('user_id', targetUserId);
+
+      if (error) throw error;
+
+      setMembers(members.map(m => m.user_id === targetUserId ? { ...m, role: newRole } : m));
+      setToast({ isVisible: true, message: `Membro atualizado para ${newRole}!`, type: 'success' });
+    } catch (error: any) {
+      setToast({ isVisible: true, message: 'Erro ao alterar cargo.', type: 'error' });
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center gap-6">
-        <div className="w-32 h-32">
-          <DotLottiePlayer src="/Loading.lottie" autoplay loop />
-        </div>
+      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#CCCC00] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  const AVAILABLE_GROUP_AVATARS = [
-    'group_icon_1_1.png', 'group_icon_1_2.png', 'group_icon_1_3.png', 'group_icon_1_4.png', 'group_icon_1_5.png', 'group_icon_1_6.png', 'group_icon_1_7.png',
-    'group_icon_2_1.png', 'group_icon_2_2.png', 'group_icon_2_3.png', 'group_icon_2_4.png', 'group_icon_2_5.png', 'group_icon_2_6.png', 'group_icon_2_7.png',
-    'group_icon_3_1.png', 'group_icon_3_2.png', 'group_icon_3_3.png', 'group_icon_3_4.png', 'group_icon_3_5.png', 'group_icon_3_6.png', 'group_icon_3_7.png',
-    'group_icon_4_1.png', 'group_icon_4_2.png', 'group_icon_4_3.png', 'group_icon_4_4.png', 'group_icon_4_5.png', 'group_icon_4_6.png', 'group_icon_4_7.png',
-    'group_icon_5_1.png', 'group_icon_5_2.png', 'group_icon_5_3.png', 'group_icon_5_4.png', 'group_icon_5_5.png', 'group_icon_5_6.png', 'group_icon_5_7.png',
-  ];
+  const startDate = new Date(activeGroup.created_at);
+  const endDate = addDays(startDate, periodDays);
+  const daysLeft = differenceInDays(endDate, new Date());
 
   return (
-    <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className} selection:bg-[#CCCC00] selection:text-black`}>
+    <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>
       <Sidebar onSignOut={() => supabase.auth.signOut()} />
 
-      <main className="flex-1 pb-32 md:pb-0 h-screen overflow-y-auto scroll-smooth">
-        {/* Cinematic Background */}
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#CCCC00]/5 blur-[120px] rounded-full" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-white/[0.02] blur-[100px] rounded-full" />
-        </div>
-
-        <div className="max-w-[850px] mx-auto px-6 py-12 md:py-20 relative z-10">
+      <main className="flex-1 pb-24 md:pb-12 h-screen overflow-y-auto overflow-x-hidden relative">
+        <div className="max-w-4xl mx-auto px-6 py-10 md:py-16">
           
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
-            <div className="flex items-center gap-6">
-              <button
-                onClick={() => router.push(`/dashboard/${groupId}`)}
-                className="w-14 h-14 rounded-[22px] bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all active:scale-90 shadow-2xl group"
-              >
-                <ChevronLeft size={24} className="text-[#808090] group-hover:text-white transition-colors" />
-              </button>
-              <div>
-                <div className="flex items-center gap-3 mb-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#CCCC00] shadow-[0_0_10px_#CCCC00]" />
-                  <h2 className="text-[10px] font-black text-[#606070] uppercase tracking-[0.4em]">Configurações</h2>
-                </div>
-                <h1 className={`text-3xl md:text-4xl font-black text-white uppercase tracking-tighter ${sora.className}`}>
-                  Gestão do Grupo
-                </h1>
-              </div>
+          <header className="flex items-center gap-6 mb-12">
+            <button
+              onClick={() => router.back()}
+              className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-95"
+            >
+              <ChevronLeft size={20} className="text-[#808090]" />
+            </button>
+            <div>
+              <h1 className={`text-2xl md:text-3xl font-black text-white uppercase tracking-tighter ${sora.className}`}>
+                Gestão do Grupo
+              </h1>
+              <p className="text-[#606070] text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Configurações de Identidade e Moderação</p>
             </div>
+          </header>
 
-            <div className="flex flex-col items-start md:items-end gap-1">
-              <span className="text-[10px] font-bold text-[#303035] uppercase tracking-widest">ID do Grupo</span>
-              <span className="text-xs font-mono text-[#606070] bg-white/5 px-3 py-1 rounded-lg border border-white/5">{groupId.split('-')[0].toUpperCase()}</span>
-            </div>
-          </div>
-
-          <form onSubmit={handleUpdateGroup} className="space-y-10">
+          <div className="grid grid-cols-1 gap-12">
             
-            {/* Section: Identity */}
-            <motion.section 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="relative p-10 bg-white/[0.01] border border-white/5 rounded-[3rem] overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
-                <Info size={120} />
+            {/* Status do Desafio */}
+            <section className="bg-[#CCCC00]/5 border border-[#CCCC00]/20 rounded-[2.5rem] p-8 relative overflow-hidden shadow-2xl">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Clock size={80} className="text-[#CCCC00]" />
               </div>
-
-              <div className="flex items-center gap-3 mb-10">
-                <div className="w-10 h-10 rounded-2xl bg-[#CCCC00]/10 border border-[#CCCC00]/20 flex items-center justify-center">
-                  <Settings size={18} className="text-[#CCCC00]" />
-                </div>
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Identidade Visual</h3>
-              </div>
-
-              <div className="space-y-10">
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-10">
-                  <div className="relative group/group-avatar">
-                    <div className="w-28 h-28 rounded-3xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center group-hover/group-avatar:border-[#CCCC00]/40 transition-all">
-                      {formData.avatar_url ? (
-                        <img src={formData.avatar_url} alt="Group Icon" className="w-full h-full object-cover" />
-                      ) : (
-                        <Users size={32} className="text-[#303035]" />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 space-y-4">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-black text-[#606070] uppercase tracking-widest ml-1">Icone do Grupo</label>
-                      <p className="text-[9px] text-[#404045] font-bold uppercase">Escolha um símbolo que represente sua unidade</p>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {AVAILABLE_GROUP_AVATARS.slice(0, 7).map(avatar => (
-                        <button
-                          key={avatar}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, avatar_url: `/avatars_group/${avatar}` })}
-                          className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${
-                            formData.avatar_url === `/avatars_group/${avatar}` 
-                              ? 'border-[#CCCC00] scale-110 shadow-[0_0_15px_rgba(204,204,0,0.3)]' 
-                              : 'border-white/5 hover:border-white/20'
-                          }`}
-                        >
-                          <img src={`/avatars_group/${avatar}`} alt="Icon" className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const randomAvatar = AVAILABLE_GROUP_AVATARS[Math.floor(Math.random() * AVAILABLE_GROUP_AVATARS.length)];
-                          setFormData({ ...formData, avatar_url: `/avatars_group/${randomAvatar}` });
-                        }}
-                        className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[10px] font-black text-[#606070] hover:text-[#CCCC00] hover:border-[#CCCC00]/40 transition-all"
-                      >
-                        ALT
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-8">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center px-1">
-                      <label className="text-[10px] font-black text-[#606070] uppercase tracking-widest">Nome da Unidade</label>
-                      {formData.name.length > 0 && <span className="text-[9px] font-bold text-[#303035]">{formData.name.length}/40</span>}
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={40}
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-[2rem] px-8 py-5 text-lg text-white font-bold placeholder:text-[#202025] focus:outline-none focus:border-[#CCCC00]/40 focus:bg-white/[0.05] transition-all"
-                      placeholder="Ex: Elite Training Club"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-black text-[#606070] uppercase tracking-widest ml-1">Descrição & Missão</label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-[2rem] px-8 py-6 text-white font-medium placeholder:text-[#202025] focus:outline-none focus:border-[#CCCC00]/40 focus:bg-white/[0.05] transition-all h-40 resize-none leading-relaxed"
-                      placeholder="Qual o objetivo principal deste grupo?"
-                    />
-                  </div>
-                </div>
-              </div>
-            </motion.section>
-
-            {/* Section: Dynamics */}
-            <motion.section 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="p-10 bg-white/[0.01] border border-white/5 rounded-[3rem] relative"
-            >
-              <div className="flex items-center gap-3 mb-10">
-                <div className="w-10 h-10 rounded-2xl bg-[#CCCC00]/10 border border-[#CCCC00]/20 flex items-center justify-center">
-                  <Target size={18} className="text-[#CCCC00]" />
-                </div>
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Dinâmica de Progresso</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-[#606070] uppercase tracking-widest ml-1">Limite Diário</label>
-                    <p className="text-[9px] text-[#404045] font-bold uppercase mb-2">Máximo de pontos por usuário/dia</p>
-                  </div>
-                  <div className="relative">
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-[#CCCC00]">
-                      <Activity size={18} />
-                    </div>
-                    <input
-                      type="number"
-                      value={formData.daily_points_limit}
-                      onChange={(e) => setFormData({ ...formData, daily_points_limit: parseInt(e.target.value) })}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-[2rem] pl-16 pr-24 py-5 text-xl text-white font-black focus:outline-none focus:border-[#CCCC00]/40 transition-all"
-                      min="1"
-                      max="10"
-                    />
-                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#303035] uppercase tracking-widest">Pontos</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-black text-[#606070] uppercase tracking-widest ml-1">Status Operacional</label>
-                    <p className="text-[9px] text-[#404045] font-bold uppercase mb-2">Visibilidade e acesso ao grupo</p>
-                  </div>
-                  
-                  {/* Custom Dropdown */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setShowStatusDropdown(!showStatusDropdown)}
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-[2rem] px-8 py-5 flex items-center justify-between group hover:border-white/20 transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-2 h-2 rounded-full ${formData.status === 'active' ? 'bg-[#CCCC00] shadow-[0_0_8px_#CCCC00]' : 'bg-[#606070]'}`} />
-                        <span className="font-bold text-white uppercase tracking-tight text-sm">
-                          {formData.status === 'active' ? 'Grupo Ativo' : 'Grupo Arquivado'}
-                        </span>
-                      </div>
-                      <ChevronDown size={18} className={`text-[#404045] transition-transform duration-300 ${showStatusDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-
-                    <AnimatePresence>
-                      {showStatusDropdown && (
-                        <>
-                          <div className="fixed inset-0 z-40" onClick={() => setShowStatusDropdown(false)} />
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            className="absolute top-full left-0 right-0 mt-3 p-3 bg-[#0A0A0A] border border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-50 overflow-hidden"
-                          >
-                            <button
-                              type="button"
-                              onClick={() => { setFormData({ ...formData, status: 'active' }); setShowStatusDropdown(false); }}
-                              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${formData.status === 'active' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}
-                            >
-                              <div className="w-2 h-2 rounded-full bg-[#CCCC00] shrink-0" />
-                              <div className="text-left">
-                                <p className="text-xs font-bold text-white uppercase tracking-tight">Ativo</p>
-                                <p className="text-[9px] text-[#606070] font-medium">Todos os membros podem postar e interagir.</p>
-                              </div>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => { setFormData({ ...formData, status: 'archived' }); setShowStatusDropdown(false); }}
-                              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all mt-1 ${formData.status === 'archived' ? 'bg-white/5' : 'hover:bg-white/[0.02]'}`}
-                            >
-                              <div className="w-2 h-2 rounded-full bg-[#606070] shrink-0" />
-                              <div className="text-left">
-                                <p className="text-xs font-bold text-white uppercase tracking-tight">Arquivado</p>
-                                <p className="text-[9px] text-[#606070] font-medium">Somente leitura. Ninguém pode postar treinos.</p>
-                              </div>
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-            </motion.section>
-
-            {/* Section: Danger Zone */}
-            {isAdmin && (
-              <motion.section 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="p-10 bg-red-500/[0.01] border border-red-500/10 rounded-[3rem] space-y-8"
-              >
+              <div className="relative z-10 space-y-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                    <AlertTriangle size={18} className="text-red-500" />
+                  <Trophy size={20} className="text-[#CCCC00]" />
+                  <h2 className="text-sm font-black text-white uppercase tracking-widest italic">Status do Desafio</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-[10px] font-bold text-[#606070] uppercase tracking-widest mb-1">Início</p>
+                    <p className="text-lg font-black text-white italic">{format(startDate, "dd 'de' MMM", { locale: ptBR })}</p>
                   </div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Procedimentos de Exclusão</h3>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#606070] uppercase tracking-widest mb-1">Término Previsto</p>
+                    <p className="text-lg font-black text-[#CCCC00] italic">{format(endDate, "dd 'de' MMM, yyyy", { locale: ptBR })}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-[#606070] uppercase tracking-widest mb-1">Status</p>
+                    <p className="text-lg font-black text-white italic">{daysLeft > 0 ? `${daysLeft} dias restantes` : 'Finalizado'}</p>
+                  </div>
                 </div>
-                
-                <div className="p-6 bg-red-500/[0.03] border border-red-500/10 rounded-[2rem] space-y-4">
-                  <p className="text-[11px] text-red-500/60 font-bold uppercase leading-relaxed tracking-wider">
-                    Atenção: A exclusão do grupo apagará permanentemente todos os logs de atividade, fotos e rankings de todos os membros vinculados.
-                  </p>
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 px-8 py-4 bg-red-500/10 text-red-500 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-red-500 hover:text-white transition-all active:scale-95 shadow-lg"
-                  >
-                    <Trash2 size={16} /> Excluir Unidade Permanentemente
-                  </button>
-                </div>
-              </motion.section>
-            )}
+              </div>
+            </section>
 
-            {/* Floating Save Action */}
-            <div className="pt-8">
-              <button
-                type="submit"
-                disabled={isUpdating}
-                className="w-full py-6 bg-[#CCCC00] text-black rounded-[2rem] font-black uppercase tracking-[0.3em] text-sm shadow-[0_20px_50px_rgba(204,204,0,0.2)] hover:shadow-[0_25px_60px_rgba(204,204,0,0.4)] transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-4 disabled:opacity-50 disabled:scale-100 group"
-              >
-                {isUpdating ? (
-                  <div className="w-6 h-6 border-3 border-black/30 border-t-black rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Save size={20} className="group-hover:rotate-12 transition-transform" /> 
-                    Confirmar Sincronização
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
+            {/* Configurações Editáveis */}
+            <section className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8 md:p-10 space-y-12">
+              
+              {/* Identidade Visual */}
+              <div className="space-y-8">
+                <div className="flex items-center gap-3">
+                  <ImageIcon size={18} className="text-[#606070]" />
+                  <h3 className="text-[11px] font-black text-[#606070] uppercase tracking-[0.3em]">Identidade Visual</h3>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-4">
+                    <label className="text-[10px] font-bold text-[#404045] uppercase tracking-widest ml-1">Ícone do Grupo</label>
+                    <div className="flex flex-wrap gap-3">
+                      {GROUP_AVATARS.map(avatar => {
+                        const url = `/avatars_group/${avatar}`;
+                        const isSelected = groupAvatar === url;
+                        return (
+                          <button
+                            key={avatar}
+                            onClick={() => setGroupAvatar(url)}
+                            className={`w-14 h-14 rounded-2xl overflow-hidden border-2 transition-all ${
+                              isSelected 
+                                ? 'border-[#CCCC00] scale-110 shadow-[0_0_20px_rgba(204,204,0,0.4)]' 
+                                : 'border-white/5 opacity-40 hover:opacity-100 hover:border-white/20'
+                            }`}
+                          >
+                            <img src={url} alt="Icon" className="w-full h-full object-cover" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-[#404045] uppercase tracking-widest ml-1">Nome do Grupo</label>
+                      <input 
+                        type="text"
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-[#404045] uppercase tracking-widest ml-1">Duração (Dias)</label>
+                      <input 
+                        type="number"
+                        value={periodDays}
+                        onChange={(e) => setPeriodDays(parseInt(e.target.value) || 0)}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-black text-lg italic"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-[#404045] uppercase tracking-widest ml-1">Descrição / Regras</label>
+                    <textarea 
+                      value={groupDescription}
+                      onChange={(e) => setGroupDescription(e.target.value)}
+                      rows={3}
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-medium text-sm resize-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleUpdateSettings}
+                  disabled={isUpdating}
+                  className="w-full sm:w-auto px-10 py-5 bg-[#CCCC00] text-black font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-[#ebd600] transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                >
+                  <Save size={16} strokeWidth={3} />
+                  {isUpdating ? 'Salvando...' : 'Salvar Alterações de Identidade'}
+                </button>
+              </div>
+
+              {/* Gestão de Membros */}
+              <div className="space-y-8 pt-12 border-t border-white/5">
+                <div className="flex items-center gap-3">
+                  <Users size={18} className="text-[#606070]" />
+                  <h3 className="text-[11px] font-black text-[#606070] uppercase tracking-[0.3em]">Gestão de Equipe ({members.length})</h3>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  {members.map((member) => {
+                    const profile = member.profiles;
+                    const isAdmin = member.role === 'admin';
+                    const isManager = member.role === 'manager';
+                    
+                    return (
+                      <div 
+                        key={member.user_id}
+                        className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.04] transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-white/5 flex items-center justify-center">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt="User" className="w-full h-full object-cover" />
+                            ) : (
+                              <Users size={16} className="text-[#303035]" />
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-white">{profile?.username || 'Membro'}</span>
+                              {isAdmin && (
+                                <span className="px-1.5 py-0.5 rounded-md bg-[#CCCC00]/10 border border-[#CCCC00]/20 text-[8px] font-black text-[#CCCC00] uppercase tracking-tighter">
+                                  ADMIN
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-[#606070] font-medium">Entrou em {format(new Date(member.joined_at), "dd/MM/yy")}</p>
+                          </div>
+                        </div>
+
+                        {/* Ações de Moderador */}
+                        {!isManager && (
+                          <button
+                            onClick={() => handleToggleAdmin(member.user_id, member.role)}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                              isAdmin 
+                                ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white'
+                                : 'bg-[#CCCC00]/10 text-[#CCCC00] border border-[#CCCC00]/20 hover:bg-[#CCCC00] hover:text-black'
+                            }`}
+                          >
+                            {isAdmin ? <ShieldAlert size={14} /> : <Shield size={14} />}
+                            {isAdmin ? 'Remover Admin' : 'Tornar Admin'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </section>
+          </div>
         </div>
       </main>
 
