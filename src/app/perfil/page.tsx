@@ -26,6 +26,9 @@ const AVAILABLE_AVATARS = [
   'avatar_05_01.png', 'avatar_05_02.png', 'avatar_05_03.png', 'avatar_05_04.png', 'avatar_05_05.png', 'avatar_05_06.png', 'avatar_05_07.png',
 ];
 
+const AVAILABLE_FEMALE_AVATARS = Array.from({ length: 35 }, (_, i) => `asset${i + 1}.png`);
+
+
 export default function ProfilePage() {
   const router = useRouter();
   const supabase = createClient();
@@ -33,6 +36,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [avatarCategory, setAvatarCategory] = useState<'male' | 'female'>('male');
   const [unlockedAchievements, setUnlockedAchievements] = useState<any[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
@@ -53,7 +57,12 @@ export default function ProfilePage() {
       
       if (data) {
         setUserProfile(data);
-        setSelectedAvatar(data.avatar_url?.split('/').pop() || null);
+        setSelectedAvatar(data.avatar_url);
+        if (data.avatar_url?.includes('avatarsfemininos')) {
+          setAvatarCategory('female');
+        } else {
+          setAvatarCategory('male');
+        }
       }
 
       // Fetch unlocked achievements that have titles
@@ -104,15 +113,14 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateAvatar = async (avatarName: string) => {
-    setSelectedAvatar(avatarName);
+  const handleUpdateAvatar = async (avatarPath: string) => {
+    setSelectedAvatar(avatarPath);
     setIsUpdating(true);
     
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const avatarPath = `/avatars/${avatarName}`;
       const { error } = await supabase
         .from('profiles')
         .update({ avatar_url: avatarPath })
@@ -235,32 +243,56 @@ export default function ProfilePage() {
 
           {/* Avatar Selection */}
           <section className="space-y-6">
-            <div className="flex items-center gap-3 px-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
-              <h2 className="text-[10px] font-black text-[#606070] uppercase tracking-[0.3em]">Selecione seu Avatar</h2>
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
+                <h2 className="text-[10px] font-black text-[#606070] uppercase tracking-[0.3em]">Selecione seu Avatar</h2>
+              </div>
+              <div className="flex bg-white/5 rounded-xl p-1">
+                <button
+                  onClick={() => setAvatarCategory('male')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    avatarCategory === 'male' ? 'bg-[#CCCC00] text-black shadow-lg' : 'text-[#606070] hover:text-white'
+                  }`}
+                >
+                  Masculino
+                </button>
+                <button
+                  onClick={() => setAvatarCategory('female')}
+                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                    avatarCategory === 'female' ? 'bg-[#CCCC00] text-black shadow-lg' : 'text-[#606070] hover:text-white'
+                  }`}
+                >
+                  Feminino
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-7 gap-4">
-              {AVAILABLE_AVATARS.map((avatar) => (
-                <button
-                  key={avatar}
-                  onClick={() => handleUpdateAvatar(avatar)}
-                  className={`relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden border-2 transition-all duration-300 active:scale-95 group ${
-                    selectedAvatar === avatar 
-                      ? 'border-[#CCCC00] shadow-[0_0_20px_rgba(204,204,0,0.2)]' 
-                      : 'border-white/5 hover:border-white/20 bg-white/[0.02]'
-                  }`}
-                >
-                  <img src={`/avatars/${avatar}`} alt="Avatar Option" className="w-full h-full object-cover" />
-                  {selectedAvatar === avatar && (
-                    <div className="absolute inset-0 bg-[#CCCC00]/10 flex items-center justify-center">
-                      <div className="w-6 h-6 rounded-full bg-[#CCCC00] text-black flex items-center justify-center">
-                        <Check size={14} strokeWidth={3} />
+              {(avatarCategory === 'male' ? AVAILABLE_AVATARS : AVAILABLE_FEMALE_AVATARS).map((avatar) => {
+                const avatarPath = avatarCategory === 'male' ? `/avatars/${avatar}` : `/avatarsfemininos/${avatar}`;
+                const isSelected = selectedAvatar === avatarPath;
+                return (
+                  <button
+                    key={avatarPath}
+                    onClick={() => handleUpdateAvatar(avatarPath)}
+                    className={`relative aspect-square rounded-2xl md:rounded-3xl overflow-hidden border-2 transition-all duration-300 active:scale-95 group ${
+                      isSelected 
+                        ? 'border-[#CCCC00] shadow-[0_0_20px_rgba(204,204,0,0.2)]' 
+                        : 'border-white/5 hover:border-white/20 bg-white/[0.02]'
+                    }`}
+                  >
+                    <img src={avatarPath} alt="Avatar Option" className="w-full h-full object-cover" />
+                    {isSelected && (
+                      <div className="absolute inset-0 bg-[#CCCC00]/10 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-full bg-[#CCCC00] text-black flex items-center justify-center">
+                          <Check size={14} strokeWidth={3} />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </button>
-              ))}
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </section>
 

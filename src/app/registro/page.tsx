@@ -392,39 +392,52 @@ function RegistroActivityContent() {
         .from('proofs')
         .getPublicUrl(filePath);
 
-      // 3. Calculate points per activity
-      const logInserts = selectedSports.map(sportId => {
+      // 3. Calculate points per activity and combine them
+      let totalPointsToAward = 0;
+      const activityNames: string[] = [];
+
+      selectedSports.forEach(sportId => {
         const activity = ACTIVITIES.find(a => a.id === sportId);
         const value = parseFloat(sportValues[sportId] || '0');
         let points = 1;
 
         if (activity) {
           points = value / activity.factor;
+          activityNames.push(activity.name);
         }
-
-        return {
-          user_id: session.user.id,
-          group_id: groupId,
-          activity_type: sportId,
-          points: Number(points.toFixed(2)),
-          proof_url: publicUrl,
-          device_info: deviceInfo,
-        };
+        totalPointsToAward += points;
       });
 
-      const totalPointsToAward = logInserts.reduce((sum, log) => sum + log.points, 0);
+      let combinedActivityType = "";
+      if (activityNames.length === 1) {
+        combinedActivityType = activityNames[0];
+      } else if (activityNames.length === 2) {
+        combinedActivityType = `${activityNames[0]} e ${activityNames[1]}`;
+      } else if (activityNames.length > 2) {
+        const last = activityNames.pop();
+        combinedActivityType = `${activityNames.join(', ')} e ${last}`;
+      }
+
+      const logInsert = {
+        user_id: session.user.id,
+        group_id: groupId,
+        activity_type: combinedActivityType,
+        points: Number(totalPointsToAward.toFixed(2)),
+        proof_url: publicUrl,
+        device_info: deviceInfo,
+      };
 
       if (currentPoints + totalPointsToAward > 4.01) { // Small buffer for float precision
         setToast({ 
           isVisible: true, 
-          message: `Limite excedido! VocÃƒÂª sÃƒÂ³ pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
+          message: `Limite excedido! Você só pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
           type: 'error' 
         });
         setIsSubmitting(false);
         return;
       }
 
-      const { error } = await supabase.from('activity_logs').insert(logInserts);
+      const { error } = await supabase.from('activity_logs').insert([logInsert]);
 
       if (error) throw error;
 
