@@ -12,7 +12,7 @@ import { formatDistanceToNow, addDays, format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import Image from 'next/image';
 import { DotLottiePlayer } from '@dotlottie/react-player';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import NotificationCenter from './NotificationCenter';
 
 const sora = Sora({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'] });
