@@ -9,8 +9,8 @@ export interface ActivityDefinition {
   name: string;
   icon: string; // lucide icon name
   metric: ActivityMetric;
-  minutesPerPoint?: number;
-  kmPerPoint?: number;
+  unit: string;
+  factor: number;
   description: string;
 }
 
@@ -53,6 +53,8 @@ export interface ActivityLog {
   distance_km: number | null;
   points: number;
   proof_url: string;
+  device_info?: string | null;
+  activity_date?: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 }

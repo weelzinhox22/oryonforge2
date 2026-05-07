@@ -3,25 +3,20 @@ import { MAX_DAILY_POINTS } from '@/lib/activities';
 
 export function calculatePoints(
   activity: ActivityDefinition,
-  totalMinutes: number,
-  distanceKm: number
+  value: number
 ): number {
-  if (activity.metric === 'time' && activity.minutesPerPoint) {
-    return Math.floor(totalMinutes / activity.minutesPerPoint);
-  }
-  if (activity.metric === 'distance' && activity.kmPerPoint) {
-    return Math.floor(distanceKm / activity.kmPerPoint);
+  if (activity.factor > 0) {
+    return value / activity.factor;
   }
   return 0;
 }
 
 export function calculateEarnablePoints(
   activity: ActivityDefinition,
-  totalMinutes: number,
-  distanceKm: number,
+  value: number,
   pointsAlreadyToday: number
 ): number {
-  const raw = calculatePoints(activity, totalMinutes, distanceKm);
+  const raw = calculatePoints(activity, value);
   const remaining = MAX_DAILY_POINTS - pointsAlreadyToday;
   return Math.min(Math.max(0, raw), Math.max(0, remaining));
 }
