@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -52,6 +52,16 @@ export default function LobbyView({
 }: LobbyViewProps) {
   const router = useRouter();
   const [view, setView] = useState<'list' | 'create' | 'join'>('list');
+
+  useEffect(() => {
+    // Check for pending invite code from link
+    const pendingCode = sessionStorage.getItem('oryon_pending_invite_code');
+    if (pendingCode) {
+      setJoinCode(pendingCode);
+      setView('join');
+      sessionStorage.removeItem('oryon_pending_invite_code');
+    }
+  }, []);
   
   // Create Group State
   const [newGroupName, setNewGroupName] = useState('');

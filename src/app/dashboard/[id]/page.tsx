@@ -204,8 +204,9 @@ export default function GroupDashboardPage() {
 
   const handleCopyInvite = () => {
     if (activeGroup?.invite_code) {
-      navigator.clipboard.writeText(activeGroup.invite_code);
-      setToast({ isVisible: true, message: 'Código de convite copiado!', type: 'success' });
+      const inviteUrl = `${window.location.origin}/code/${activeGroup.invite_code}`;
+      navigator.clipboard.writeText(inviteUrl);
+      setToast({ isVisible: true, message: 'Link de convite copiado!', type: 'success' });
       setTimeout(() => setToast({ isVisible: false, message: '', type: 'success' }), 3000);
     }
   };
