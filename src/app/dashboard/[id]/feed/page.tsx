@@ -38,7 +38,7 @@ export default function GroupFeedPage() {
         supabase.from('groups').select('name, avatar_url').eq('id', groupId).single(),
         supabase
           .from('activity_logs')
-          .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
+          .select('*, profiles:profiles(username, avatar_url, title)')
           .eq('group_id', groupId)
           .not('proof_url', 'is', null)
           .order('created_at', { ascending: false }),

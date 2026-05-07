@@ -46,12 +46,12 @@ export default function PostDetailPage() {
       const [{ data: postData }, { data: comms }, { count: lCount }, { data: userLike }] = await Promise.all([
         supabase
           .from('activity_logs')
-          .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
+          .select('*, profiles:profiles(username, avatar_url, title)')
           .eq('id', postId)
           .single(),
         supabase
           .from('activity_comments')
-          .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
+          .select('*, profiles:profiles(username, avatar_url, title)')
           .eq('activity_log_id', postId)
           .order('created_at', { ascending: true }),
         supabase
@@ -111,7 +111,7 @@ export default function PostDetailPage() {
     const { data, error } = await supabase
       .from('activity_comments')
       .insert({ activity_log_id: postId, user_id: session?.user.id, content: newComment.trim() })
-      .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
+      .select('*, profiles:profiles(username, avatar_url, title)')
       .single();
 
     if (error) {
@@ -174,8 +174,8 @@ export default function PostDetailPage() {
                 <div>
                   <p className="text-[11px] font-black text-white uppercase tracking-tight group-hover/u:text-[#CCCC00] transition-colors">
                     {post.profiles?.username}
-                    {post.profiles?.active_title && (
-                      <span className="text-[#606070] font-normal text-[9px] normal-case ml-1">, {post.profiles.active_title}</span>
+                    {post.profiles?.title && (
+                      <span className="text-[#606070] font-normal text-[9px] normal-case ml-1">, {post.profiles.title}</span>
                     )}
                   </p>
                   <p className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest">{post.activity_type}</p>
