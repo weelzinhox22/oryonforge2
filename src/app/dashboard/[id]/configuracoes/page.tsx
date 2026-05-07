@@ -64,7 +64,13 @@ export default function GroupSettingsPage() {
         return;
       }
 
-      const group = membership.groups;
+      const group = Array.isArray(membership.groups) ? membership.groups[0] : (membership.groups as any);
+      
+      if (!group) {
+        router.push(`/dashboard`);
+        return;
+      }
+
       setActiveGroup(group);
       setUserRole(membership.role);
       setGroupName(group.name);
@@ -283,7 +289,7 @@ export default function GroupSettingsPage() {
 
                 <div className="grid grid-cols-1 gap-3">
                   {members.map((member) => {
-                    const profile = member.profiles;
+                    const profile = Array.isArray(member.profiles) ? member.profiles[0] : (member.profiles as any);
                     const isAdmin = member.role === 'admin';
                     const isManager = member.role === 'manager';
                     
