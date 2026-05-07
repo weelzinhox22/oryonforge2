@@ -147,7 +147,13 @@ export default function PostDetailPage() {
 
           {/* ── Back ── */}
           <button
-            onClick={() => router.push(`/dashboard/${groupId}/feed`)}
+            onClick={() => {
+              if (window.history.length > 1) {
+                router.back();
+              } else {
+                router.push(`/dashboard/${groupId}/feed`);
+              }
+            }}
             className="flex items-center gap-2 text-[#606070] hover:text-white transition-colors mb-8 group"
           >
             <ChevronLeft size={18} className="group-hover:-translate-x-0.5 transition-transform" />
