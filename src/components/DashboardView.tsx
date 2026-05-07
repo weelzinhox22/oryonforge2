@@ -259,7 +259,8 @@ export default function DashboardView({
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.03 }}
-                      className={`group flex items-center justify-between transition-all duration-300 ${
+                      onClick={() => router.push(`/membros/${user.userId}`)}
+                      className={`group flex items-center justify-between transition-all duration-300 cursor-pointer ${
                         isMinimalist 
                           ? `p-3 rounded-xl border ${isMe ? 'bg-[#CCCC00]/5 border-[#CCCC00]/20' : 'bg-transparent border-white/5 hover:border-white/20'}`
                           : `p-4 md:p-5 rounded-[24px] border ${isMe ? 'bg-[#CCCC00]/5 border-[#CCCC00]/20 shadow-[0_0_20px_rgba(204,204,0,0.05)]' : 'bg-white/[0.01] border-white/[0.04] hover:bg-white/[0.03] hover:border-white/10'}`
@@ -288,7 +289,7 @@ export default function DashboardView({
                             </span>
                           )}
                         </div>
-
+ 
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
                             <span className={`font-black tracking-tight text-white ${isMinimalist ? 'text-xs' : 'text-sm'}`}>
@@ -302,7 +303,7 @@ export default function DashboardView({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         <div className="text-right">
                           {editingUserId === user.userId ? (
                             <div className="flex items-center gap-2">

@@ -110,7 +110,7 @@ export default function IndividualAchievementsPage() {
             </div>
             <div className="p-8 bg-white/[0.02] border border-white/5 rounded-[2.5rem] flex flex-col items-center text-center">
               <span className="text-[10px] font-black text-[#303035] uppercase tracking-widest mb-4">Nível de Honra</span>
-              <span className="text-2xl font-black text-white uppercase tracking-tight mb-1 italic">Guerreiro</span>
+              <span className="text-2xl font-black text-white uppercase tracking-tight mb-1 italic">Membro</span>
               <div className="w-full h-1 bg-white/5 rounded-full mt-2 overflow-hidden">
                 <div className="w-[45%] h-full bg-[#CCCC00]" />
               </div>

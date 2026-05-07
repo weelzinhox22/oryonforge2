@@ -97,7 +97,7 @@ export default function GroupAchievementsPage() {
       subtitle: 'Conquista Desbloqueada',
       value: achievement.points_reward || '',
       imageUrl: achievement.icon_url,
-      username: userProfile?.username || 'Guerreiro',
+      username: userProfile?.username || 'Membro',
       date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase()
     });
     setShowShareCard(true);

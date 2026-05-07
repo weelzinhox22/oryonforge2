@@ -106,10 +106,10 @@ export default function GroupDashboardPage() {
         setUserRole(membershipData.role);
       }
 
-      // Fetch all members to get adjustments
+      // Fetch all members to get adjustments and titles
       const { data: allMembers, error: allMembersError } = await supabase
         .from('group_members')
-        .select('user_id, adjustment_points, profiles(username, level, title, avatar_url)')
+        .select('user_id, adjustment_points, profile_display_with_titles(username, level, title, avatar_url, active_title)')
         .eq('group_id', targetGroupId);
 
       const scores: Record<string, { username: string; points: number; userId: string; adjustment: number; level: number; title: string; avatarUrl: string }> = {};
@@ -121,14 +121,14 @@ export default function GroupDashboardPage() {
 
       if (processedMembers) {
         processedMembers.forEach((m: any) => {
-          const profile = m.profiles as any;
+          const profile = m.profile_display_with_titles as any;
           scores[m.user_id] = { 
             username: profile?.username || 'Usuário', 
             points: m.adjustment_points || 0,
             userId: m.user_id,
             adjustment: m.adjustment_points || 0,
             level: profile?.level || 1,
-            title: profile?.title || 'Recruta',
+            title: profile?.active_title || profile?.title || 'Recruta',
             avatarUrl: profile?.avatar_url
           };
         });

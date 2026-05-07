@@ -326,7 +326,7 @@ function RegistroActivityContent() {
         subtitle: 'Esforço Validado',
         value: selectedSports.length,
         imageUrl: publicUrl,
-        username: userProfile?.username || 'Guerreiro',
+        username: userProfile?.username || 'Membro',
         date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase()
       });
 
@@ -474,7 +474,7 @@ function RegistroActivityContent() {
                           <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20">
                             <Camera size={28} />
                           </div>
-                          <span className="text-xs font-black text-white uppercase tracking-widest">Alterar Foto</span>
+                          <span className="text-[12px] font-black text-white truncate">{userProfile?.username || 'Membro'}</span>
                         </div>
                       </motion.div>
                     ) : (

@@ -1,9 +1,10 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Download, Share2, Camera, MessageCircle, Trophy, Activity, Zap, User } from 'lucide-react';
+import { X, Download, Share2, Camera, MessageCircle, Trophy, Activity, Zap, User, Loader2 } from 'lucide-react';
 import { Sora, Outfit } from 'next/font/google';
-import Image from 'next/image';
+import { useRef, useState, useCallback } from 'react';
+import { toPng } from 'html-to-image';
 
 const sora = Sora({ subsets: ['latin'], weight: ['400', '600', '700', '800'] });
 const outfit = Outfit({ subsets: ['latin'], weight: ['300', '400', '500', '700', '900'] });
@@ -23,6 +24,53 @@ interface ShareCardProps {
 }
 
 export default function ShareCard({ isOpen, onClose, data }: ShareCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleDownload = useCallback(async (isSharing: boolean = false) => {
+    if (!cardRef.current) return;
+
+    try {
+      setIsGenerating(true);
+      
+      // Pequeno delay para garantir que as fontes e imagens carregaram
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const dataUrl = await toPng(cardRef.current, {
+        cacheBust: true,
+        quality: 1,
+        pixelRatio: 2, // Alta qualidade
+        backgroundColor: '#000000',
+        style: {
+          borderRadius: '0px', // Remover bordas arredondadas externas para o export
+        }
+      });
+
+      const link = document.createElement('a');
+      link.download = `oryon-forge-${data.type}-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      if (isSharing && navigator.share) {
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'conquista.png', { type: 'image/png' });
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Minha Conquista no Oryon Forge',
+            text: 'Confira minha evolução!',
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao gerar imagem:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [data]);
+
   if (!isOpen) return null;
 
   return (
@@ -50,12 +98,15 @@ export default function ShareCard({ isOpen, onClose, data }: ShareCardProps) {
           </button>
 
           {/* Card Preview (9:16 Aspect Ratio) */}
-          <div className="relative w-full max-w-[360px] aspect-[9/16] bg-[#000000] border border-[#CCCC00]/20 rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.8),0_0_50px_rgba(204,204,0,0.1)] group">
+          <div 
+            ref={cardRef}
+            className="relative w-full max-w-[360px] aspect-[9/16] bg-[#000000] border border-[#CCCC00]/20 rounded-[2.5rem] overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.8),0_0_50px_rgba(204,204,0,0.1)] group"
+          >
             
             {/* Visual Proof / Background Image */}
             {data.imageUrl ? (
               <div className="absolute inset-0">
-                <img src={data.imageUrl} className="w-full h-full object-cover" alt="Proof" />
+                <img src={data.imageUrl} className="w-full h-full object-cover" alt="Proof" crossOrigin="anonymous" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
               </div>
             ) : (
@@ -120,7 +171,7 @@ export default function ShareCard({ isOpen, onClose, data }: ShareCardProps) {
                   </div>
                   <div className="text-left">
                     <p className="text-xs font-black text-white uppercase tracking-tight leading-none">{data.username}</p>
-                    <p className="text-[8px] font-bold text-[#606070] uppercase tracking-[0.2em] mt-1">Guerreiro Oryon Forge</p>
+                    <p className="text-[8px] font-bold text-[#606070] uppercase tracking-[0.2em] mt-1">Membro Oryon Forge</p>
                   </div>
                 </div>
               </div>
@@ -134,50 +185,45 @@ export default function ShareCard({ isOpen, onClose, data }: ShareCardProps) {
           <div className="flex-1 w-full max-w-sm space-y-8">
             <div className="space-y-4">
               <h3 className={`text-3xl font-black text-white uppercase tracking-tighter italic ${sora.className}`}>
-                Compartilhar <br />Conquista
+                Gerar <br />Imagem
               </h3>
               <p className="text-[#606070] text-sm font-medium leading-relaxed uppercase">
-                Gere um card estilizado para postar nos seus stories e mostrar sua evolução para a comunidade.
+                Gere um card exclusivo para postar nos seus stories e mostrar sua evolução.
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               <button 
-                className="w-full py-5 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
-                onClick={() => {
-                  // Em um app real, aqui usaríamos html-to-image para gerar o arquivo
-                  alert('DICA: Tire um print da tela para compartilhar no seu Story!');
-                }}
+                disabled={isGenerating}
+                className="w-full py-5 rounded-2xl bg-[#CCCC00] text-black font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleDownload(true)}
               >
-                <Camera size={20} />
-                <span>Stories do Instagram</span>
+                {isGenerating ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Camera size={20} />
+                )}
+                <span>Exportar p/ Stories</span>
               </button>
 
               <button 
-                className="w-full py-5 rounded-2xl bg-green-600 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
-                onClick={() => {
-                   alert('DICA: Tire um print da tela para compartilhar no WhatsApp!');
-                }}
+                disabled={isGenerating}
+                className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:bg-white/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleDownload(false)}
               >
-                <MessageCircle size={20} />
-                <span>WhatsApp Status</span>
-              </button>
-
-              <button 
-                className="w-full py-5 rounded-2xl bg-white/5 border border-white/10 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-4 hover:bg-white/10 transition-all"
-                onClick={() => {
-                   alert('DICA: O card está pronto para o print!');
-                }}
-              >
-                <Download size={20} />
-                <span>Salvar Imagem</span>
+                {isGenerating ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Download size={20} />
+                )}
+                <span>Salvar na Galeria</span>
               </button>
             </div>
 
             <div className="p-6 bg-[#CCCC00]/5 border border-[#CCCC00]/10 rounded-2xl flex items-start gap-4">
               <Zap className="text-[#CCCC00] shrink-0" size={20} />
               <p className="text-[10px] text-[#606070] font-medium leading-relaxed uppercase">
-                O card foi otimizado para a proporção <span className="text-white font-bold">9:16</span>, ideal para dispositivos móveis e redes sociais.
+                O sistema gerou uma imagem de alta definição (PNG) otimizada para a proporção <span className="text-white font-bold">9:16</span>.
               </p>
             </div>
           </div>

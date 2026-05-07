@@ -71,7 +71,7 @@ export default function GroupFeedPage() {
 
         const { data } = await supabase
           .from('activity_logs')
-          .select('*, profiles(username, avatar_url)')
+          .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
           .eq('group_id', groupId)
           .not('proof_url', 'is', null)
           .order('created_at', { ascending: false });
@@ -112,7 +112,7 @@ export default function GroupFeedPage() {
     // Fetch Comments
     const { data: comms } = await supabase
       .from('activity_comments')
-      .select('*, profiles(username, avatar_url)')
+      .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
       .eq('activity_log_id', activityId)
       .order('created_at', { ascending: true });
     
@@ -166,7 +166,7 @@ export default function GroupFeedPage() {
           user_id: session?.user.id,
           content: newComment.trim()
         })
-        .select('*, profiles(username, avatar_url)')
+        .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
         .single();
 
       if (data) {
@@ -326,8 +326,11 @@ export default function GroupFeedPage() {
               {/* Info Side */}
               <div className="w-full lg:w-[400px] border-l border-white/5 p-8 flex flex-col overflow-y-auto">
                 <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
+                  <div 
+                    className="flex items-center gap-4 cursor-pointer group/user"
+                    onClick={() => router.push(`/membros/${selectedItem.user_id}`)}
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center group-hover/user:border-[#CCCC00]/50 transition-all">
                       {selectedItem.profiles?.avatar_url ? (
                         <img src={selectedItem.profiles.avatar_url} className="w-full h-full object-cover" />
                       ) : (
@@ -335,7 +338,12 @@ export default function GroupFeedPage() {
                       )}
                     </div>
                     <div>
-                      <h3 className="text-sm font-black text-white uppercase tracking-tight">{selectedItem.profiles?.username}</h3>
+                      <h3 className="text-sm font-black text-white uppercase tracking-tight group-hover/user:text-[#CCCC00] transition-colors">
+                        {selectedItem.profiles?.username}
+                        {selectedItem.profiles?.active_title && (
+                          <span className="text-[#606070] font-light text-[10px] lowercase ml-1">, {selectedItem.profiles.active_title}</span>
+                        )}
+                      </h3>
                       <p className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest">{selectedItem.activity_type}</p>
                     </div>
                   </div>

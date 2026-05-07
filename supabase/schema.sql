@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS activity_logs (
   distance_km NUMERIC(6,2),
   points INTEGER NOT NULL DEFAULT 0,
   proof_url TEXT,
+  device_info TEXT,
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );

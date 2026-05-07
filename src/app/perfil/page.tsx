@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
+  const [unlockedAchievements, setUnlockedAchievements] = useState<any[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
 
@@ -45,7 +46,7 @@ export default function ProfilePage() {
       }
 
       const { data } = await supabase
-        .from('profiles')
+        .from('profile_display_with_titles')
         .select('*')
         .eq('id', session.user.id)
         .single();
@@ -54,11 +55,51 @@ export default function ProfilePage() {
         setUserProfile(data);
         setSelectedAvatar(data.avatar_url?.split('/').pop() || null);
       }
+
+      // Fetch unlocked achievements that have titles
+      const { data: unlocked } = await supabase
+        .from('user_achievements')
+        .select(`
+          achievement_id,
+          achievements (*)
+        `)
+        .eq('user_id', session.user.id);
+      
+      if (unlocked) {
+        const achs = unlocked
+          .map((u: any) => u.achievements)
+          .filter((a: any) => a.title_name); // Only those with titles
+        setUnlockedAchievements(achs);
+      }
+
       setIsLoading(false);
     };
 
     fetchProfile();
   }, [supabase, router]);
+
+  const handleUpdateTitle = async (achievementId: string | null) => {
+    setIsUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ selected_achievement_id: achievementId })
+        .eq('id', session.user.id);
+
+      if (error) throw error;
+
+      setToast({ isVisible: true, message: 'Título atualizado com sucesso!', type: 'success' });
+      setUserProfile({ ...userProfile, selected_achievement_id: achievementId });
+    } catch (error) {
+      console.error('Erro ao atualizar título:', error);
+      setToast({ isVisible: true, message: 'Erro ao atualizar título.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
   const handleUpdateAvatar = async (avatarName: string) => {
     setSelectedAvatar(avatarName);
@@ -164,7 +205,12 @@ export default function ProfilePage() {
 
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex flex-col md:flex-row items-center md:items-end gap-3 mb-2">
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">{userProfile?.username}</h2>
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
+                      {userProfile?.username}
+                      {userProfile?.active_title && (
+                        <span className="text-[#606070] font-light text-xl lowercase ml-2">, {userProfile.active_title}</span>
+                      )}
+                    </h2>
                     <span className="px-2 py-1 bg-[#CCCC00]/10 border border-[#CCCC00]/20 rounded-lg text-[10px] font-black text-[#CCCC00] uppercase mb-1">
                       LVL {userProfile?.level || 1}
                     </span>
@@ -209,6 +255,72 @@ export default function ProfilePage() {
                   )}
                 </button>
               ))}
+            </div>
+          </section>
+
+          {/* Title Selection */}
+          <section className="space-y-6 mt-16">
+            <div className="flex items-center gap-3 px-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
+              <h2 className="text-[10px] font-black text-[#606070] uppercase tracking-[0.3em]">Título de Honra</h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {unlockedAchievements.map((ach) => (
+                <button
+                  key={ach.id}
+                  onClick={() => handleUpdateTitle(ach.id)}
+                  className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all duration-300 group ${
+                    userProfile?.selected_achievement_id === ach.id 
+                      ? 'bg-[#CCCC00]/5 border-[#CCCC00]/30 shadow-[0_0_30px_rgba(204,204,0,0.05)]' 
+                      : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 overflow-hidden ${
+                    userProfile?.selected_achievement_id === ach.id ? 'bg-[#CCCC00] shadow-lg shadow-[#CCCC00]/20' : 'bg-white/5'
+                  }`}>
+                    <img src={ach.icon_url} alt="" className={`w-full h-full object-contain p-1.5 ${userProfile?.selected_achievement_id === ach.id ? 'brightness-0' : 'opacity-40'}`} />
+                  </div>
+                  <div className="text-left flex-1">
+                    <span className={`block text-[11px] font-black uppercase tracking-widest ${userProfile?.selected_achievement_id === ach.id ? 'text-[#CCCC00]' : 'text-white'}`}>
+                      {ach.title_name || ach.title}
+                    </span>
+                    <span className="text-[9px] font-bold text-[#404045] uppercase tracking-wider mt-0.5">Desbloqueado em {ach.title}</span>
+                  </div>
+                  {userProfile?.selected_achievement_id === ach.id && (
+                    <div className="w-6 h-6 rounded-full bg-[#CCCC00] text-black flex items-center justify-center shrink-0">
+                      <Check size={12} strokeWidth={4} />
+                    </div>
+                  )}
+                </button>
+              ))}
+
+              {/* Default Level Title */}
+              <button
+                onClick={() => handleUpdateTitle(null)}
+                className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all duration-300 group ${
+                  !userProfile?.selected_achievement_id 
+                    ? 'bg-[#CCCC00]/5 border-[#CCCC00]/30 shadow-[0_0_30px_rgba(204,204,0,0.05)]' 
+                    : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500 ${
+                  !userProfile?.selected_achievement_id ? 'bg-[#CCCC00] text-black shadow-lg shadow-[#CCCC00]/20' : 'bg-white/5 text-[#303035]'
+                }`}>
+                  <ShieldCheck size={20} />
+                </div>
+                <div className="text-left flex-1">
+                  <span className={`block text-[11px] font-black uppercase tracking-widest ${!userProfile?.selected_achievement_id ? 'text-[#CCCC00]' : 'text-white'}`}>
+                    Título de Nível ({userProfile?.title})
+                  </span>
+                  <span className="text-[9px] font-bold text-[#404045] uppercase tracking-wider mt-0.5">Padrão por XP</span>
+                </div>
+                {!userProfile?.selected_achievement_id && (
+                  <div className="w-6 h-6 rounded-full bg-[#CCCC00] text-black flex items-center justify-center shrink-0">
+                    <Check size={12} strokeWidth={4} />
+                  </div>
+                )}
+              </button>
             </div>
           </section>
 

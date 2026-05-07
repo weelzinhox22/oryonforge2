@@ -48,6 +48,7 @@ Registro de todas as atividades físicas enviadas.
 *   `distance_km`: NUMERIC
 *   `points`: INTEGER (Pontos calculados no envio)
 *   `proof_url`: TEXT (URL da imagem de prova no Storage)
+*   `device_info`: TEXT (Informações do dispositivo usado)
 *   `status`: activity_status (Estado da moderação)
 
 ## 3. Funções RPC (Lógica de Servidor)

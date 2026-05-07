@@ -127,7 +127,7 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-1.5">
-                <span className="text-[12px] font-black text-white truncate">{profile?.username || 'Guerreiro'}</span>
+                <span className="text-[12px] font-black text-white truncate">{profile?.username || 'Membro'}</span>
                 <span className="px-1.5 py-0.5 bg-[#CCCC00]/10 border border-[#CCCC00]/20 rounded text-[7px] font-black text-[#CCCC00] uppercase">
                   LVL {profile?.level || 1}
                 </span>
