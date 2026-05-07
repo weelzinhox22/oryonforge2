@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Smartphone, Download, X, Share } from 'lucide-react';
 
@@ -9,56 +10,74 @@ export default function PWAInstallBanner() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [platform, setPlatform] = useState<'ios' | 'android' | 'other'>('other');
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const supabase = createClient();
 
   useEffect(() => {
-    // 1. Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      return;
-    }
+    const init = async () => {
+      // 1. Check if already installed
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        return;
+      }
 
-    // 2. Check if user dismissed permanently (LocalStorage)
-    const isPermanentlyDismissed = localStorage.getItem('oryon_pwa_dismissed');
-    if (isPermanentlyDismissed) return;
+      // 2. Fetch User Profile & DB Preferences
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    // 3. Check if user dismissed for this session (SessionStorage)
-    const isSessionDismissed = sessionStorage.getItem('oryon_pwa_session_dismissed');
-    if (isSessionDismissed) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .single();
+      
+      setUserProfile(profile);
 
-    // Detect Platform
-    const ua = window.navigator.userAgent.toLowerCase();
-    const isIOS = /iphone|ipad|ipod/.test(ua);
-    const isAndroid = /android/.test(ua);
+      // 3. Check if user dismissed in DB or LocalStorage
+      const isPermanentlyDismissed = profile?.ui_preferences?.pwa_dismissed || localStorage.getItem('oryon_pwa_dismissed');
+      if (isPermanentlyDismissed) return;
 
-    if (isIOS) setPlatform('ios');
-    else if (isAndroid) setPlatform('android');
+      // 4. Check if user dismissed for this session (SessionStorage)
+      const isSessionDismissed = sessionStorage.getItem('oryon_pwa_session_dismissed');
+      if (isSessionDismissed) return;
 
-    // Android/Chrome Install Prompt
-    const handleBeforeInstallPrompt = (e: any) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      // Show banner after 5 seconds if not dismissed
-      setTimeout(() => {
-        if (!sessionStorage.getItem('oryon_pwa_session_dismissed')) {
-          setIsVisible(true);
-        }
-      }, 5000);
+      // Detect Platform
+      const ua = window.navigator.userAgent.toLowerCase();
+      const isIOS = /iphone|ipad|ipod/.test(ua);
+      const isAndroid = /android/.test(ua);
+
+      if (isIOS) setPlatform('ios');
+      else if (isAndroid) setPlatform('android');
+
+      // Android/Chrome Install Prompt
+      const handleBeforeInstallPrompt = (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        // Show banner after 5 seconds if not dismissed
+        setTimeout(() => {
+          if (!sessionStorage.getItem('oryon_pwa_session_dismissed')) {
+            setIsVisible(true);
+          }
+        }, 5000);
+      };
+
+      // iOS Show banner after 5 seconds
+      if (isIOS) {
+        setTimeout(() => {
+          if (!sessionStorage.getItem('oryon_pwa_session_dismissed')) {
+            setIsVisible(true);
+          }
+        }, 5000);
+      }
+
+      window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+      return () => {
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      };
     };
 
-    // iOS Show banner after 5 seconds
-    if (isIOS) {
-      setTimeout(() => {
-        if (!sessionStorage.getItem('oryon_pwa_session_dismissed')) {
-          setIsVisible(true);
-        }
-      }, 5000);
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
+    init();
+  }, [supabase]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -79,9 +98,27 @@ export default function PWAInstallBanner() {
     sessionStorage.setItem('oryon_pwa_session_dismissed', 'true');
   };
 
-  const handlePermanentDismiss = () => {
-    localStorage.setItem('oryon_pwa_dismissed', 'true');
+  const handlePermanentDismiss = async () => {
     setIsVisible(false);
+    // 1. Save to LocalStorage for immediate effect
+    localStorage.setItem('oryon_pwa_dismissed', 'true');
+    
+    // 2. Save to Database for cross-device persistence
+    if (userProfile) {
+      try {
+        await supabase
+          .from('profiles')
+          .update({ 
+            ui_preferences: { 
+              ...userProfile.ui_preferences, 
+              pwa_dismissed: true 
+            } 
+          })
+          .eq('id', userProfile.id);
+      } catch (error) {
+        console.error('Erro ao salvar preferência PWA no banco:', error);
+      }
+    }
   };
 
   if (!isVisible) return null;
