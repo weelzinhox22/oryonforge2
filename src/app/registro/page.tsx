@@ -11,6 +11,7 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import Toast from '@/components/Toast';
 import Sidebar from '@/components/Sidebar';
+import ImageCropEditor from '@/components/ImageCropEditor';
 import { ACTIVITIES } from '@/lib/activities';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { DotLottiePlayer } from '@dotlottie/react-player';
@@ -183,7 +184,7 @@ function RegistroActivityContent() {
   const [sportValues, setSportValues] = useState<Record<string, string>>({});
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [imageOffsets, setImageOffsets] = useState<number[]>([]); // 0 to 100 for Y-axis (top/bottom)
+  const [imageOffsets, setImageOffsets] = useState<{x: number, y: number}[]>([]); // 0 to 100 for X/Y axis
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'error' | 'success' }>({
     isVisible: false, message: '', type: 'error'
@@ -195,13 +196,13 @@ function RegistroActivityContent() {
 
     const totalFiles = proofFiles.length + files.length;
     if (totalFiles > 4) {
-      setToast({ isVisible: true, message: 'MÃ¡ximo de 4 fotos permitido.', type: 'error' });
+      setToast({ isVisible: true, message: 'MÃƒÂ¡ximo de 4 fotos permitido.', type: 'error' });
       return;
     }
 
     const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        setToast({ isVisible: true, message: `O arquivo ${file.name} Ã© muito grande (MÃ¡x: 5MB).`, type: 'error' });
+        setToast({ isVisible: true, message: `O arquivo ${file.name} ÃƒÂ© muito grande (MÃƒÂ¡x: 5MB).`, type: 'error' });
         return false;
       }
       return true;
@@ -210,7 +211,7 @@ function RegistroActivityContent() {
     const newProofFiles = [...proofFiles, ...validFiles];
     setProofFiles(newProofFiles);
     setPreviewUrls(newProofFiles.map(file => URL.createObjectURL(file)));
-    setImageOffsets([...imageOffsets, ...validFiles.map(() => 50)]); // Default to center (50%)
+    setImageOffsets([...imageOffsets, ...validFiles.map(() => ({ x: 50, y: 50 }))]); // Default to center (50%)
   };
 
   const removeFile = (index: number, e: React.MouseEvent) => {
@@ -252,7 +253,7 @@ function RegistroActivityContent() {
     canvas.width = size;
     canvas.height = size;
 
-    const drawImageCover = (img: HTMLImageElement, x: number, y: number, w: number, h: number, offsetYPercent: number = 50) => {
+    const drawImageCover = (img: HTMLImageElement, x: number, y: number, w: number, h: number, offset: {x: number, y: number} = {x: 50, y: 50}) => {
       const imgRatio = img.width / img.height;
       const targetRatio = w / h;
       let sx, sy, sw, sh;
@@ -261,16 +262,16 @@ function RegistroActivityContent() {
         // Image is wider than target
         sh = img.height;
         sw = sh * targetRatio;
-        sx = (img.width - sw) / 2;
+        const totalSlack = img.width - sw;
+        sx = (totalSlack * offset.x) / 100;
         sy = 0;
       } else {
         // Image is taller than target
         sw = img.width;
         sh = sw / targetRatio;
         sx = 0;
-        // Apply Y offset
         const totalSlack = img.height - sh;
-        sy = (totalSlack * offsetYPercent) / 100;
+        sy = (totalSlack * offset.y) / 100;
       }
       ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
     };
@@ -319,25 +320,25 @@ function RegistroActivityContent() {
       return;
     }
     if (proofFiles.length === 0) {
-      setToast({ isVisible: true, message: 'A Comprovação visual Ã© obrigatÃ³ria.', type: 'error' });
+      setToast({ isVisible: true, message: 'A ComprovaÃ§Ã£o visual ÃƒÂ© obrigatÃƒÂ³ria.', type: 'error' });
       return;
     }
     if (!groupId) {
-      setToast({ isVisible: true, message: 'ID do grupo nÃ£o identificado.', type: 'error' });
+      setToast({ isVisible: true, message: 'ID do grupo nÃƒÂ£o identificado.', type: 'error' });
       return;
     }
     
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Sessão expirada.');
+      if (!session) throw new Error('SessÃ£o expirada.');
 
       // 0. Check Daily Limit and Time Constraints
       const now = new Date();
       const hour = now.getHours();
       
       if (hour === 0) {
-        setToast({ isVisible: true, message: 'HorÃ¡rio bloqueado! Nada de treinos Ã  meia-noite.', type: 'error' });
+        setToast({ isVisible: true, message: 'HorÃƒÂ¡rio bloqueado! Nada de treinos ÃƒÂ  meia-noite.', type: 'error' });
         setIsSubmitting(false);
         return;
       }
@@ -357,7 +358,7 @@ function RegistroActivityContent() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays > 45) {
-          setToast({ isVisible: true, message: 'O desafio de 45 dias jÃ¡ encerrou para este grupo.', type: 'error' });
+          setToast({ isVisible: true, message: 'O desafio de 45 dias jÃƒÂ¡ encerrou para este grupo.', type: 'error' });
           setIsSubmitting(false);
           return;
         }
@@ -416,7 +417,7 @@ function RegistroActivityContent() {
       if (currentPoints + totalPointsToAward > 4.01) { // Small buffer for float precision
         setToast({ 
           isVisible: true, 
-          message: `Limite excedido! VocÃª sÃ³ pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
+          message: `Limite excedido! VocÃƒÂª sÃƒÂ³ pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
           type: 'error' 
         });
         setIsSubmitting(false);
@@ -460,7 +461,7 @@ function RegistroActivityContent() {
                 Registro de Atividade
               </h1>
               <p className="text-[#606070] text-sm md:text-base font-medium max-w-xl">
-                Selecione sua modalidade e anexe a Comprovação para validar seu esforÃ§o diÃ¡rio.
+                Selecione sua modalidade e anexe a ComprovaÃ§Ã£o para validar seu esforÃƒÂ§o diÃƒÂ¡rio.
               </p>
             </div>
           </div>
@@ -539,7 +540,7 @@ function RegistroActivityContent() {
             {selectedSports.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-8">
-                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do EsforÃ§o</h2>
+                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do EsforÃƒÂ§o</h2>
                   <div className="h-px flex-1 bg-white/5" />
                 </div>
                 
@@ -584,11 +585,11 @@ function RegistroActivityContent() {
           <div className="lg:col-span-4 space-y-10">
             <section>
               <div className="flex items-center gap-3 mb-8">
-                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: Comprovação</h2>
+                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: ComprovaÃ§Ã£o</h2>
                 <div className="h-px flex-1 bg-white/5" />
               </div>
 
-              {/* â”€â”€ Empty drop zone (no files yet) â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Empty drop zone (no files yet) Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {previewUrls.length === 0 && (
                 <label className="block w-full rounded-[2.5rem] border-2 border-dashed border-white/5 bg-[#050505] hover:border-[#CCCC00]/30 hover:bg-[#CCCC00]/[0.02] transition-all duration-500 cursor-pointer overflow-hidden aspect-square flex flex-col items-center justify-center group shadow-2xl">
                   <input
@@ -601,14 +602,14 @@ function RegistroActivityContent() {
                   <div className="w-24 h-24 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/30 transition-all duration-700">
                     <UploadCloud size={40} strokeWidth={1} className="text-[#606070] group-hover:text-[#CCCC00] group-hover:animate-bounce" />
                   </div>
-                  <h3 className="text-lg font-black text-white mb-2">Enviar Evidências</h3>
+                  <h3 className="text-lg font-black text-white mb-2">Enviar EvidÃªncias</h3>
                   <p className="text-xs text-[#606070] font-medium leading-relaxed max-w-[200px] text-center">
-                    Selecione até 4 fotos para criar um grid automático de treino.
+                    Selecione atÃ© 4 fotos para criar um grid automÃ¡tico de treino.
                   </p>
                 </label>
               )}
 
-              {/* â”€â”€ Image cards (visible once files are added) â”€â”€ */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Image cards (visible once files are added) Ã¢â€â‚¬Ã¢â€â‚¬ */}
               <AnimatePresence>
                 {previewUrls.length > 0 && (
                   <motion.div
@@ -624,53 +625,19 @@ function RegistroActivityContent() {
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 8 }}
                         transition={{ delay: idx * 0.05 }}
-                        className="bg-[#050505] border border-white/[0.06] rounded-2xl overflow-hidden"
                       >
-                        {/* Full-image preview â€” object-contain, no crop */}
-                        <div className="relative w-full bg-black flex items-center justify-center">
-                          <img
-                            src={url}
-                            alt={`Foto ${idx + 1}`}
-                            className="w-full max-h-[260px] object-contain block"
-                          />
-                          {/* Badge */}
-                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10">
-                            <span className="text-[9px] font-black text-white uppercase tracking-widest">Foto {idx + 1}</span>
-                          </div>
-                          {/* Remove button */}
-                          <button
-                            onClick={(e) => removeFile(idx, e)}
-                            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 text-[#606070] hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-
-                        {/* Position slider */}
-                        <div className="px-4 py-3 border-t border-white/[0.06]">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[9px] font-black text-[#606070] uppercase tracking-widest">Posição no grid</span>
-                            <span className="text-[9px] font-black text-[#CCCC00]">
-                              {imageOffsets[idx] <= 30 ? '▲ Topo' : imageOffsets[idx] >= 70 ? '▼ Base' : '● Centro'}
-                            </span>
-                          </div>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={imageOffsets[idx]}
-                            onChange={(e) => {
-                              const newOffsets = [...imageOffsets];
-                              newOffsets[idx] = parseInt(e.target.value);
-                              setImageOffsets(newOffsets);
-                            }}
-                            className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#CCCC00]"
-                          />
-                          <div className="flex justify-between mt-1">
-                            <span className="text-[7px] text-[#303035] font-bold uppercase">Topo</span>
-                            <span className="text-[7px] text-[#303035] font-bold uppercase">Base</span>
-                          </div>
-                        </div>
+                        <ImageCropEditor
+                          src={url}
+                          offsetX={imageOffsets[idx]?.x ?? 50}
+                          offsetY={imageOffsets[idx]?.y ?? 50}
+                          index={idx}
+                          onRemove={(e) => removeFile(idx, e)}
+                          onChange={(x, y) => {
+                            const newOffsets = [...imageOffsets];
+                            newOffsets[idx] = { x, y };
+                            setImageOffsets(newOffsets);
+                          }}
+                        />
                       </motion.div>
                     ))}
 
@@ -703,7 +670,7 @@ function RegistroActivityContent() {
                   <AlertCircle className="text-[#CCCC00]" size={20} />
                 </div>
                 <p className="text-[11px] text-[#606070] leading-relaxed font-medium">
-                  A pontuação <span className="text-white font-bold">é automática</span>. Auditorias periódicas são realizadas; em caso de fraude, o administrador poderá remover os pontos retroativamente.
+                  A pontuaÃ§Ã£o <span className="text-white font-bold">Ã© automÃ¡tica</span>. Auditorias periÃ³dicas sÃ£o realizadas; em caso de fraude, o administrador poderÃ¡ remover os pontos retroativamente.
                 </p>
               </div>
 
@@ -761,3 +728,4 @@ export default function RegistroActivityPage() {
     </Suspense>
   );
 }
+
