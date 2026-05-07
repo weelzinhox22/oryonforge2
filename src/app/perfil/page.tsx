@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Camera, User, 
   Settings, LogOut, Check,
-  ShieldCheck, ArrowRight, LayoutGrid, AlignLeft
+  ShieldCheck, ArrowRight
 } from 'lucide-react';
 import { Sora, Outfit } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
@@ -150,28 +150,6 @@ export default function ProfilePage() {
     }
   };
 
-  const handleUpdateStyle = async (style: 'premium' | 'minimalist') => {
-    setIsUpdating(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ dashboard_style: style })
-        .eq('id', session.user.id);
-
-      if (error) throw error;
-
-      setToast({ isVisible: true, message: 'Preferência de visual atualizada!', type: 'success' });
-      setUserProfile({ ...userProfile, dashboard_style: style });
-    } catch (error) {
-      console.error('Erro ao atualizar estilo:', error);
-      setToast({ isVisible: true, message: 'Erro ao salvar preferência.', type: 'error' });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -203,6 +181,12 @@ export default function ProfilePage() {
               </h1>
               <p className="text-[#606070] text-[10px] font-bold uppercase tracking-[0.2em] mt-1">Configurações de Identidade</p>
             </div>
+            <button
+              onClick={() => router.push('/perfil/configuracoes')}
+              className="ml-auto w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-[#CCCC00]/10 hover:border-[#CCCC00]/30 group transition-all active:scale-95"
+            >
+              <Settings size={20} className="text-[#808090] group-hover:text-[#CCCC00]" />
+            </button>
           </div>
 
           {/* Profile Card */}
@@ -374,88 +358,23 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          {/* UI Preferences */}
-          <section className="space-y-6 mt-16">
-            <div className="flex items-center gap-3 px-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
-              <h2 className="text-[10px] font-black text-[#606070] uppercase tracking-[0.3em]">Preferências de Interface</h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              {/* Dashboard Style (Visual) */}
-              <div id="tutorial-visual" className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { id: 'premium', label: 'Premium', icon: LayoutGrid, desc: 'Cards visuais e imersivos.' },
-                  { id: 'minimalist', label: 'Minimalista', icon: AlignLeft, desc: 'Foco em dados e simplicidade.' },
-                ].map((style) => (
-                  <button
-                    key={style.id}
-                    onClick={() => handleUpdateStyle(style.id as any)}
-                    className={`flex items-center gap-5 p-6 rounded-[2rem] border transition-all duration-300 group ${
-                      userProfile?.dashboard_style === style.id 
-                        ? 'bg-[#CCCC00]/5 border-[#CCCC00]/30 shadow-[0_0_30px_rgba(204,204,0,0.05)]' 
-                        : 'bg-white/[0.02] border-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-500 ${
-                      userProfile?.dashboard_style === style.id ? 'bg-[#CCCC00] text-black shadow-lg shadow-[#CCCC00]/20' : 'bg-white/5 text-[#606070]'
-                    }`}>
-                      <style.icon size={20} />
-                    </div>
-                    <div className="text-left">
-                      <span className={`block text-[13px] font-black uppercase tracking-widest ${userProfile?.dashboard_style === style.id ? 'text-[#CCCC00]' : 'text-white'}`}>
-                        {style.label}
-                      </span>
-                      <span className="text-[10px] font-bold text-[#606070] uppercase tracking-wider mt-0.5">{style.desc}</span>
-                    </div>
-                  </button>
-                ))}
+          {/* Settings Link Footer */}
+          <section className="mt-16 pt-10 border-t border-white/[0.05]">
+            <button
+              onClick={() => router.push('/perfil/configuracoes')}
+              className="w-full flex items-center justify-between p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:border-[#CCCC00]/20 hover:bg-[#CCCC00]/5 transition-all group"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center text-[#606070] group-hover:text-[#CCCC00] transition-colors">
+                  <Settings size={24} />
+                </div>
+                <div className="text-left">
+                  <span className="block text-lg font-black uppercase tracking-tight text-white italic">Configurações de Interface</span>
+                  <span className="text-xs font-bold text-[#606070] uppercase tracking-widest mt-1">Personalize o visual e navegação</span>
+                </div>
               </div>
-
-              {/* Navigation Style (UI) */}
-              <button
-                id="tutorial-nav"
-                onClick={async () => {
-                  const currentNav = userProfile?.ui_preferences?.nav_style || 'standard';
-                  const newNav = currentNav === 'hamburger' ? 'standard' : 'hamburger';
-                  try {
-                    const { error } = await supabase
-                      .from('profiles')
-                      .update({ 
-                        ui_preferences: { 
-                          ...userProfile?.ui_preferences, 
-                          nav_style: newNav 
-                        } 
-                      })
-                      .eq('id', userProfile?.id);
-                    if (error) throw error;
-                    setUserProfile({ 
-                      ...userProfile, 
-                      ui_preferences: { ...userProfile?.ui_preferences, nav_style: newNav } 
-                    });
-                    setToast({ isVisible: true, message: 'Navegação atualizada!', type: 'success' });
-                  } catch (e) {
-                    setToast({ isVisible: true, message: 'Erro ao salvar.', type: 'error' });
-                  }
-                }}
-                className="flex items-center justify-between p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all group"
-              >
-                <div className="flex items-center gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-[#606070] group-hover:text-[#CCCC00] transition-colors">
-                    {userProfile?.ui_preferences?.nav_style === 'hamburger' ? <AlignLeft size={20} /> : <LayoutGrid size={20} />}
-                  </div>
-                  <div className="text-left">
-                    <span className="block text-[13px] font-black uppercase tracking-widest text-white">Menu de Navegação</span>
-                    <span className="text-[10px] font-bold text-[#606070] uppercase tracking-wider mt-0.5">
-                      Atual: {userProfile?.ui_preferences?.nav_style === 'hamburger' ? 'Hambúrguer' : 'Barra Inferior'}
-                    </span>
-                  </div>
-                </div>
-                <div className={`w-12 h-6 rounded-full p-1 transition-all ${userProfile?.ui_preferences?.nav_style === 'hamburger' ? 'bg-[#CCCC00]' : 'bg-white/10'}`}>
-                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-all ${userProfile?.ui_preferences?.nav_style === 'hamburger' ? 'translate-x-6' : 'translate-x-0'}`} />
-                </div>
-              </button>
-            </div>
+              <ArrowRight size={20} className="text-[#202025] group-hover:text-[#CCCC00] group-hover:translate-x-2 transition-all" />
+            </button>
           </section>
 
         </div>

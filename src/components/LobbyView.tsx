@@ -357,62 +357,6 @@ export default function LobbyView({
                   </div>
                </div>
             </div>
-
-            {/* QUICK ACHIEVEMENTS SCROLL */}
-            <div className="lg:col-span-4 bg-[#0A0A0A]/40 backdrop-blur-2xl border border-white/[0.05] rounded-[3rem] p-8 flex flex-col justify-between">
-               <div className="flex items-center justify-between mb-6 px-2">
-                  <h3 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em]">Últimas Conquistas</h3>
-                  <button 
-                    onClick={() => router.push('/perfil/conquistas')}
-                    className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest hover:underline transition-all"
-                  >
-                    Ver Todas
-                  </button>
-               </div>
-
-               <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
-                  {userAchievements.length > 0 ? (
-                    userAchievements.map((ua, i) => (
-                      <motion.div 
-                        key={ua.id}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: i * 0.1 }}
-                        className="w-20 shrink-0 flex flex-col items-center gap-2"
-                      >
-                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 flex items-center justify-center p-2.5 group relative cursor-pointer">
-                            <img 
-                              src={ua.achievements?.icon_url} 
-                              alt={ua.achievements?.title} 
-                              className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-500" 
-                            />
-                            {/* Hover Tooltip Placeholder */}
-                            <div className="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 rounded-2xl">
-                               <span className="text-[7px] font-black text-white uppercase text-center tracking-tighter">{ua.achievements?.title}</span>
-                            </div>
-                         </div>
-                         <span className="text-[8px] font-black text-[#606070] uppercase text-center leading-tight truncate w-full">{ua.achievements?.title}</span>
-                      </motion.div>
-                    ))
-                  ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center py-4 text-center opacity-30">
-                       <Sparkles size={32} className="mb-2 text-[#303035]" />
-                       <p className="text-[9px] font-black uppercase tracking-widest">Nenhuma conquista desbloqueada ainda</p>
-                    </div>
-                  )}
-                  {/* Empty States / Example Achievements if user has none */}
-                  {userAchievements.length === 0 && [
-                    { title: 'Projeto Verão', icon: '/conquistas/projetoverao.png' },
-                    { title: 'Modo Caverna', icon: '/conquistas/modocaverna.png' }
-                  ].map((ex, i) => (
-                    <div key={i} className="w-20 shrink-0 flex flex-col items-center gap-2 opacity-20 filter grayscale">
-                       <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center p-3">
-                          <img src={ex.icon} className="w-full h-full object-contain" />
-                       </div>
-                    </div>
-                  ))}
-               </div>
-            </div>
           </section>
 
           {/* QUICK ACTIONS - Moved up per user request */}
@@ -449,6 +393,46 @@ export default function LobbyView({
                 </button>
               ))}
             </div>
+          </section>
+
+          {/* QUICK ACHIEVEMENTS SCROLL */}
+          <section className="bg-[#0A0A0A]/40 backdrop-blur-2xl border border-white/[0.05] rounded-[2.5rem] p-6">
+             <div className="flex items-center justify-between mb-6 px-2">
+                <h3 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em]">Últimas Conquistas</h3>
+                <button 
+                  onClick={() => router.push('/perfil/conquistas')}
+                  className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest hover:underline transition-all"
+                >
+                  Ver Todas
+                </button>
+             </div>
+
+             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+                {userAchievements.length > 0 ? (
+                  userAchievements.slice(0, 6).map((ua, i) => (
+                    <motion.div 
+                      key={ua.id}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: i * 0.1 }}
+                      className="flex flex-col items-center gap-1.5"
+                    >
+                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 flex items-center justify-center p-2 group relative cursor-pointer">
+                          <img 
+                            src={ua.achievements?.icon_url} 
+                            alt={ua.achievements?.title} 
+                            className="w-full h-full object-contain filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)] group-hover:scale-110 transition-transform duration-500" 
+                          />
+                       </div>
+                       <span className="text-[7px] font-black text-[#606070] uppercase text-center leading-tight truncate w-full">{ua.achievements?.title}</span>
+                    </motion.div>
+                  ))
+                ) : (
+                  <div className="col-span-full flex flex-col items-center justify-center py-2 text-center opacity-30">
+                     <p className="text-[8px] font-black uppercase tracking-widest">Nenhuma conquista desbloqueada</p>
+                  </div>
+                )}
+             </div>
           </section>
           
           {/* Two-Column Layout for Groups & Activity (Moved to Top) */}
