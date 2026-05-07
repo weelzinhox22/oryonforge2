@@ -11,7 +11,6 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import Toast from '@/components/Toast';
 import Sidebar from '@/components/Sidebar';
-import Sidebar from '@/components/Sidebar';
 import { ACTIVITIES } from '@/lib/activities';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { DotLottiePlayer } from '@dotlottie/react-player';
@@ -729,16 +728,6 @@ function RegistroActivityContent() {
         onClose={() => setToast({ ...toast, isVisible: false })}
       />
 
-      {shareData && (
-        <ShareCard 
-          isOpen={showShareCard}
-          onClose={() => {
-            setShowShareCard(false);
-            router.push('/dashboard');
-          }}
-          data={shareData}
-        />
-      )}
     </div>
   );
 }
