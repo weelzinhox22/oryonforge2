@@ -12,6 +12,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import BottomNav from '@/components/BottomNav';
 import Sidebar from '@/components/Sidebar';
+import Toast from '@/components/Toast';
 import { DotLottiePlayer } from '@dotlottie/react-player';
 
 const sora = Sora({ subsets: ['latin'], weight: ['700', '800'] });
@@ -32,6 +33,7 @@ export default function PostDetailPage() {
   const [likesCount, setLikesCount] = useState(0);
   const [hasLiked, setHasLiked] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
   const commentsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,14 +78,28 @@ export default function PostDetailPage() {
   const handleToggleLike = async () => {
     if (!currentUserId) return;
     if (hasLiked) {
-      await supabase.from('activity_likes').delete()
+      const { error } = await supabase.from('activity_likes').delete()
         .eq('activity_log_id', postId).eq('user_id', currentUserId);
+      
+      if (error) {
+        setToast({ isVisible: true, message: 'Erro ao remover Kudos.', type: 'error' });
+        return;
+      }
+      
       setLikesCount(p => Math.max(0, p - 1));
       setHasLiked(false);
     } else {
       const { error } = await supabase.from('activity_likes')
         .insert({ activity_log_id: postId, user_id: currentUserId });
-      if (!error) { setLikesCount(p => p + 1); setHasLiked(true); }
+      
+      if (error) {
+        console.error('Erro ao dar Kudos:', error);
+        setToast({ isVisible: true, message: 'Não foi possível dar Kudos.', type: 'error' });
+        return;
+      }
+      
+      setLikesCount(p => p + 1);
+      setHasLiked(true);
     }
   };
 
@@ -97,7 +113,11 @@ export default function PostDetailPage() {
       .insert({ activity_log_id: postId, user_id: session?.user.id, content: newComment.trim() })
       .select('*, profiles:profile_display_with_titles(username, avatar_url, active_title)')
       .single();
-    if (data && !error) {
+
+    if (error) {
+      console.error('Erro ao comentar:', error);
+      setToast({ isVisible: true, message: 'Erro ao enviar comentário.', type: 'error' });
+    } else if (data) {
       setComments(prev => [...prev, data]);
       setNewComment('');
       setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -249,6 +269,12 @@ export default function PostDetailPage() {
       </main>
 
       <BottomNav />
+      <Toast
+        isVisible={toast.isVisible}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, isVisible: false })}
+      />
     </div>
   );
 }
