@@ -47,12 +47,12 @@ function ActivityCard({ act, isSelected, onSelect, index, isMinimalist }: { act:
             x: [0, 1, -1, 0],
             y: [0, -1, 1, 0]
           },
-          transition: { duration: 0.4, repeat: Infinity, ease: "linear" }
+          transition: { duration: 0.4, repeat: Infinity, ease: "linear" as const }
         };
       case 'musculacao':
         return {
           animate: { y: [0, -5, 0], scale: [1, 1.05, 1] },
-          transition: { duration: 1.2, repeat: Infinity, ease: "easeInOut" }
+          transition: { duration: 1.2, repeat: Infinity, ease: "easeInOut" as const }
         };
       case 'corrida':
       case 'esteira':
@@ -62,7 +62,7 @@ function ActivityCard({ act, isSelected, onSelect, index, isMinimalist }: { act:
             y: [0, -2, 0],
             skewX: [0, -5, 0]
           },
-          transition: { duration: 0.6, repeat: Infinity, ease: "easeInOut" }
+          transition: { duration: 0.6, repeat: Infinity, ease: "easeInOut" as const }
         };
       case 'crossfit':
       case 'funcional':
@@ -73,7 +73,7 @@ function ActivityCard({ act, isSelected, onSelect, index, isMinimalist }: { act:
       default:
         return {
           animate: { y: [0, -3, 0] },
-          transition: { duration: 1, repeat: Infinity, ease: "easeInOut" }
+          transition: { duration: 1, repeat: Infinity, ease: "easeInOut" as const }
         };
     }
   };

@@ -82,7 +82,7 @@ export default function LobbyView({
             nav_style: newStyle 
           } 
         })
-        .eq('id', session?.user?.id);
+        .eq('id', userProfile?.id);
       
       if (error) throw error;
       setToast({ isVisible: true, message: 'Preferência de navegação atualizada.', type: 'success' });

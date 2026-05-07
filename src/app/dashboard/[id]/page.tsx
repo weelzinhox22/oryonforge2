@@ -112,7 +112,7 @@ export default function GroupDashboardPage() {
         .select('user_id, adjustment_points, profiles(username, level, title, avatar_url)')
         .eq('group_id', targetGroupId);
 
-      const scores: Record<string, { username: string; points: number; userId: string; adjustment: number }> = {};
+      const scores: Record<string, { username: string; points: number; userId: string; adjustment: number; level: number; title: string; avatarUrl: string }> = {};
       
       // Handle members even if adjustment_points is missing
       const processedMembers = allMembersError?.message?.includes('adjustment_points') 

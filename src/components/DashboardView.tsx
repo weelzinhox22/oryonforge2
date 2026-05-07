@@ -21,7 +21,7 @@ interface DashboardViewProps {
   userProfile: any;
   activeGroup: any;
   userRole?: string;
-  ranking: { username: string; points: number; userId: string; adjustment: number }[];
+  ranking: { username: string; points: number; userId: string; adjustment: number; avatarUrl?: string; level?: number; title?: string }[];
   dailyPoints: number;
   streak: number;
   activityFeed?: any[];
@@ -222,6 +222,7 @@ export default function DashboardView({
                   </button>
                 )}
                 <button
+                  id="tutorial-registro"
                   onClick={() => router.push(`/registro?groupId=${activeGroup?.id}`)}
                   className="hidden md:flex group relative px-10 py-5 bg-[#CCCC00] text-[#000000] font-semibold rounded-full items-center justify-center gap-3 hover:bg-[#ebd600] active:scale-[0.98] transition-all w-full md:w-auto shadow-[0_0_40px_rgba(214,208,0,0.15)]"
                 >
@@ -235,7 +236,7 @@ export default function DashboardView({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {/* LEFT: RANKING */}
-          <div className="lg:col-span-7 space-y-8">
+          <div id="tutorial-ranking" className="lg:col-span-7 space-y-8">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em]">Classificação</h2>
               <span className="text-[10px] font-medium text-[#606070]">{ranking.length} membros</span>

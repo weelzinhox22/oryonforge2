@@ -32,7 +32,8 @@ export default function GroupSettingsPage() {
     name: '',
     description: '',
     daily_points_limit: 4,
-    status: 'active'
+    status: 'active',
+    avatar_url: ''
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
@@ -59,13 +60,14 @@ export default function GroupSettingsPage() {
       }
 
       setIsAdmin(membership.role === 'admin');
-      setGroup(membership.groups);
+      const groupData = membership.groups as any;
+      setGroup(groupData);
       setFormData({
-        name: membership.groups.name,
-        description: membership.groups.description || '',
-        daily_points_limit: membership.groups.daily_points_limit || 4,
-        status: membership.groups.status || 'active',
-        avatar_url: membership.groups.avatar_url || ''
+        name: groupData.name,
+        description: groupData.description || '',
+        daily_points_limit: groupData.daily_points_limit || 4,
+        status: groupData.status || 'active',
+        avatar_url: groupData.avatar_url || ''
       });
       setIsLoading(false);
     };
