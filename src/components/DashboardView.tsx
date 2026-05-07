@@ -222,7 +222,12 @@ export default function DashboardView({
               <div className="space-y-10 flex-1 w-full max-w-xl">
                 <div>
                   <h1 className="text-4xl md:text-5xl font-light text-white tracking-tight leading-tight">
-                    Bom dia,<br />
+                    {(() => {
+                      const hour = new Date().getHours();
+                      if (hour >= 5 && hour < 12) return 'Bom dia';
+                      if (hour >= 12 && hour < 18) return 'Boa tarde';
+                      return 'Boa noite';
+                    })()},<br />
                     <span className="font-semibold text-white">{userProfile?.username || 'Atleta'}</span>
                   </h1>
                   <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed">

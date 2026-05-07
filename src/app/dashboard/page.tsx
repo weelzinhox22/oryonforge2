@@ -154,6 +154,7 @@ export default function DashboardIndexPage() {
   };
 
   const handleSignOut = async () => {
+    router.push('/login');
     await supabase.auth.signOut();
   };
 

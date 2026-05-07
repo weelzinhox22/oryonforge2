@@ -199,6 +199,7 @@ export default function GroupDashboardPage() {
   };
 
   const handleSignOut = async () => {
+    router.push('/login');
     await supabase.auth.signOut();
   };
 
