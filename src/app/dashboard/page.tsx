@@ -72,7 +72,29 @@ export default function DashboardIndexPage() {
         .select('group_id, role, groups (*)')
         .eq('user_id', userId);
 
-      const groups = groupsData || [];
+      // Fetch last activity date for each group to sort
+      const { data: lastActivities } = await supabase
+        .from('activity_logs')
+        .select('group_id, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      const lastActivityMap: Record<string, string> = {};
+      lastActivities?.forEach(log => {
+        if (!lastActivityMap[log.group_id]) {
+          lastActivityMap[log.group_id] = log.created_at;
+        }
+      });
+
+      const groups = (groupsData || []).map(ug => ({
+        ...ug,
+        last_activity_at: lastActivityMap[ug.group_id] || null
+      })).sort((a, b) => {
+        if (!a.last_activity_at) return 1;
+        if (!b.last_activity_at) return -1;
+        return new Date(b.last_activity_at).getTime() - new Date(a.last_activity_at).getTime();
+      });
+
       setUserGroups(groups);
 
       // Fetch User Achievements

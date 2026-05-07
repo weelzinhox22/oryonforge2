@@ -412,7 +412,12 @@ export default function LobbyView({
                   </div>
                   <h2 className="text-[10px] font-black text-[#303035] uppercase tracking-[0.3em]">Comunidades Ativas</h2>
                 </div>
-                <span className="text-[10px] font-black text-[#CCCC00] bg-[#CCCC00]/5 px-4 py-1.5 rounded-full border border-[#CCCC00]/10 uppercase tracking-widest">{userGroups.length} Conexões</span>
+                <div className="flex items-center gap-2">
+                  <span className="hidden md:inline-block text-[10px] font-black text-[#CCCC00] bg-[#CCCC00]/5 px-4 py-1.5 rounded-full border border-[#CCCC00]/10 uppercase tracking-widest">{userGroups.length} Conexões</span>
+                  <button className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-[#606070] hover:text-[#CCCC00] hover:border-[#CCCC00]/30 transition-all">
+                    <AlignLeft size={16} />
+                  </button>
+                </div>
               </div>
               
               {userGroups.length > 0 ? (
@@ -469,6 +474,14 @@ export default function LobbyView({
                             <p className="text-[10px] text-[#606070] font-black uppercase tracking-widest flex items-center gap-2">
                               Ciclo: {ug.groups.period_days} Dias
                             </p>
+                            {ug.last_activity_at && (
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-1 rounded-full bg-[#CCCC00] shadow-[0_0_8px_#CCCC00]" />
+                                <span className="text-[9px] font-black text-[#CCCC00] uppercase tracking-tighter italic">
+                                  Ativo {formatDistanceToNow(new Date(ug.last_activity_at), { addSuffix: true, locale: ptBR })}
+                                </span>
+                              </div>
+                            )}
                             <ChevronRight size={14} className="text-[#303035] -translate-x-2 opacity-0 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
                           </div>
                         </div>

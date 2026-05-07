@@ -66,10 +66,13 @@ export default function ProfilePage() {
         .eq('user_id', session.user.id);
       
       if (unlocked) {
-        const achs = unlocked
-          .map((u: any) => u.achievements)
-          .filter((a: any) => a.title_name); // Only those with titles
-        setUnlockedAchievements(achs);
+        const uniqueAchs = Array.from(new Map(
+          unlocked
+            .map((u: any) => u.achievements)
+            .filter((a: any) => a?.title_name)
+            .map(a => [a.id, a])
+        ).values());
+        setUnlockedAchievements(uniqueAchs);
       }
 
       setIsLoading(false);

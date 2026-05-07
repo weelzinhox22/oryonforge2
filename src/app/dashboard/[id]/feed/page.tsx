@@ -316,7 +316,7 @@ export default function GroupFeedPage() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Image Side */}
-              <div className="flex-1 bg-black flex items-center justify-center relative min-h-[300px]">
+              <div className="w-full lg:flex-1 bg-black flex items-center justify-center relative min-h-[250px] max-h-[50vh] lg:max-h-full overflow-hidden">
                 <img
                   src={selectedItem.proof_url}
                   className="w-full h-full object-contain"
@@ -324,7 +324,7 @@ export default function GroupFeedPage() {
               </div>
 
               {/* Info Side */}
-              <div className="w-full lg:w-[400px] border-l border-white/5 p-8 flex flex-col overflow-y-auto">
+              <div className="w-full lg:w-[400px] border-t lg:border-t-0 lg:border-l border-white/5 p-6 md:p-8 flex flex-col overflow-y-auto bg-[#0A0A0A]">
                 <div className="flex items-center justify-between mb-8">
                   <div 
                     className="flex items-center gap-4 cursor-pointer group/user"
@@ -347,8 +347,8 @@ export default function GroupFeedPage() {
                       <p className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest">{selectedItem.activity_type}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-white tracking-tighter">+{selectedItem.points}</div>
+                  <div className="text-right shrink-0">
+                    <div className="text-xl md:text-2xl font-black text-white tracking-tighter">+{selectedItem.points}</div>
                     <div className="text-[8px] font-black text-[#606070] uppercase tracking-[0.2em]">pontos obtidos</div>
                   </div>
                 </div>
