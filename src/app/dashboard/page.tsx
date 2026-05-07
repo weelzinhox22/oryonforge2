@@ -115,15 +115,22 @@ export default function DashboardIndexPage() {
       const totalXP = totalPointsData?.reduce((acc, log) => acc + log.points, 0) || 0;
       setTotalXP(totalXP);
 
-      // Global Activity Feed for Lobby
-      const { data: feedData } = await supabase
-        .from('activity_feed')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (feedData) {
-        setActivityFeed(feedData);
+      // Activity Feed filtered to groups the user belongs to
+      const userGroupIds = (groupsData || []).map((ug: any) => ug.group_id);
+
+      if (userGroupIds.length > 0) {
+        const { data: feedData } = await supabase
+          .from('activity_feed')
+          .select('*')
+          .in('group_id', userGroupIds)
+          .order('created_at', { ascending: false })
+          .limit(15);
+        
+        if (feedData) {
+          setActivityFeed(feedData);
+        }
+      } else {
+        setActivityFeed([]);
       }
 
       // Calculate Daily Points (Total across all groups for today)

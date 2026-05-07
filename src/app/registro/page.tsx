@@ -195,13 +195,13 @@ function RegistroActivityContent() {
 
     const totalFiles = proofFiles.length + files.length;
     if (totalFiles > 4) {
-      setToast({ isVisible: true, message: 'Máximo de 4 fotos permitido.', type: 'error' });
+      setToast({ isVisible: true, message: 'MÃ¡ximo de 4 fotos permitido.', type: 'error' });
       return;
     }
 
     const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        setToast({ isVisible: true, message: `O arquivo ${file.name} é muito grande (Máx: 5MB).`, type: 'error' });
+        setToast({ isVisible: true, message: `O arquivo ${file.name} Ã© muito grande (MÃ¡x: 5MB).`, type: 'error' });
         return false;
       }
       return true;
@@ -319,11 +319,11 @@ function RegistroActivityContent() {
       return;
     }
     if (proofFiles.length === 0) {
-      setToast({ isVisible: true, message: 'A comprovação visual é obrigatória.', type: 'error' });
+      setToast({ isVisible: true, message: 'A Comprovação visual Ã© obrigatÃ³ria.', type: 'error' });
       return;
     }
     if (!groupId) {
-      setToast({ isVisible: true, message: 'ID do grupo não identificado.', type: 'error' });
+      setToast({ isVisible: true, message: 'ID do grupo nÃ£o identificado.', type: 'error' });
       return;
     }
     
@@ -337,7 +337,7 @@ function RegistroActivityContent() {
       const hour = now.getHours();
       
       if (hour === 0) {
-        setToast({ isVisible: true, message: 'Horário bloqueado! Nada de treinos à meia-noite.', type: 'error' });
+        setToast({ isVisible: true, message: 'HorÃ¡rio bloqueado! Nada de treinos Ã  meia-noite.', type: 'error' });
         setIsSubmitting(false);
         return;
       }
@@ -357,7 +357,7 @@ function RegistroActivityContent() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays > 45) {
-          setToast({ isVisible: true, message: 'O desafio de 45 dias já encerrou para este grupo.', type: 'error' });
+          setToast({ isVisible: true, message: 'O desafio de 45 dias jÃ¡ encerrou para este grupo.', type: 'error' });
           setIsSubmitting(false);
           return;
         }
@@ -416,7 +416,7 @@ function RegistroActivityContent() {
       if (currentPoints + totalPointsToAward > 4.01) { // Small buffer for float precision
         setToast({ 
           isVisible: true, 
-          message: `Limite excedido! Você só pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
+          message: `Limite excedido! VocÃª sÃ³ pode registrar mais ${(4 - currentPoints).toFixed(2)} pontos hoje. Esta atividade soma ${totalPointsToAward.toFixed(2)} pts.`, 
           type: 'error' 
         });
         setIsSubmitting(false);
@@ -460,7 +460,7 @@ function RegistroActivityContent() {
                 Registro de Atividade
               </h1>
               <p className="text-[#606070] text-sm md:text-base font-medium max-w-xl">
-                Selecione sua modalidade e anexe a comprovação para validar seu esforço diário.
+                Selecione sua modalidade e anexe a Comprovação para validar seu esforÃ§o diÃ¡rio.
               </p>
             </div>
           </div>
@@ -539,7 +539,7 @@ function RegistroActivityContent() {
             {selectedSports.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-8">
-                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do Esforço</h2>
+                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do EsforÃ§o</h2>
                   <div className="h-px flex-1 bg-white/5" />
                 </div>
                 
@@ -587,103 +587,114 @@ function RegistroActivityContent() {
                 <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: Comprovação</h2>
                 <div className="h-px flex-1 bg-white/5" />
               </div>
-              
-              <div className="relative group">
-                <label className={`block w-full rounded-[2.5rem] border-2 border-dashed transition-all duration-500 cursor-pointer overflow-hidden aspect-square flex flex-col items-center justify-center relative ${
-                  previewUrls.length > 0 
-                    ? 'border-[#CCCC00]/40 bg-[#050505]' 
-                    : 'border-white/5 bg-[#050505] hover:border-[#CCCC00]/30 hover:bg-[#CCCC00]/[0.02] shadow-2xl'
-                }`}>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+
+              {/* â”€â”€ Empty drop zone (no files yet) â”€â”€ */}
+              {previewUrls.length === 0 && (
+                <label className="block w-full rounded-[2.5rem] border-2 border-dashed border-white/5 bg-[#050505] hover:border-[#CCCC00]/30 hover:bg-[#CCCC00]/[0.02] transition-all duration-500 cursor-pointer overflow-hidden aspect-square flex flex-col items-center justify-center group shadow-2xl">
+                  <input
+                    type="file"
+                    accept="image/*"
                     multiple
-                    className="hidden" 
+                    className="hidden"
                     onChange={handleFileChange}
-                    disabled={proofFiles.length >= 4}
                   />
-                  
-                  <AnimatePresence mode="wait">
-                    {previewUrls.length > 0 ? (
-                      <motion.div 
-                        key="preview"
-                        initial={{ opacity: 0, scale: 1.1 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.4 }}
-                        className="relative w-full h-full p-2"
-                      >
-                        <div className={`grid h-full gap-2 ${
-                          previewUrls.length === 1 ? 'grid-cols-1' : 'grid-cols-2'
-                        }`}>
-                          {previewUrls.map((url, idx) => (
-                            <div key={url} className={`relative rounded-xl overflow-hidden group/item ${
-                              previewUrls.length === 3 && idx === 0 ? 'row-span-2 h-full' : 'h-full'
-                            }`}>
-                              <img 
-                                src={url} 
-                                alt="Preview" 
-                                className="w-full h-full object-cover transition-transform duration-500" 
-                                style={{ objectPosition: `50% ${imageOffsets[idx]}%` }}
-                              />
-                              
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                <div className="absolute bottom-4 left-4 right-4 space-y-3">
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[8px] font-black text-white/50 uppercase tracking-widest">Ajustar Enquadramento</span>
-                                    <button 
-                                      onClick={(e) => removeFile(idx, e)}
-                                      className="w-8 h-8 rounded-lg bg-red-500/20 text-red-500 flex items-center justify-center backdrop-blur-md border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </div>
-                                  <input 
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={imageOffsets[idx]}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                      const newOffsets = [...imageOffsets];
-                                      newOffsets[idx] = parseInt(e.target.value);
-                                      setImageOffsets(newOffsets);
-                                    }}
-                                    className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#CCCC00]"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                        {proofFiles.length < 4 && (
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-500 flex flex-col items-center justify-center gap-4 backdrop-blur-md">
-                            <div className="w-16 h-16 rounded-full bg-white/10 text-white flex items-center justify-center border border-white/20">
-                              <Camera size={28} />
-                            </div>
-                            <span className="text-[12px] font-black text-white uppercase tracking-widest">Adicionar mais fotos ({proofFiles.length}/4)</span>
-                          </div>
-                        )}
-                      </motion.div>
-                    ) : (
-                      <motion.div 
-                        key="empty"
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="flex flex-col items-center text-center p-8"
-                      >
-                        <div className="w-24 h-24 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/30 transition-all duration-700">
-                          <UploadCloud size={40} strokeWidth={1} className="text-[#606070] group-hover:text-[#CCCC00] group-hover:animate-bounce" />
-                        </div>
-                        <h3 className="text-lg font-black text-white mb-2">Enviar Evidências</h3>
-                        <p className="text-xs text-[#606070] font-medium leading-relaxed max-w-[200px]">
-                          Selecione até 4 fotos para criar um grid automático de treino.
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  <div className="w-24 h-24 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/30 transition-all duration-700">
+                    <UploadCloud size={40} strokeWidth={1} className="text-[#606070] group-hover:text-[#CCCC00] group-hover:animate-bounce" />
+                  </div>
+                  <h3 className="text-lg font-black text-white mb-2">Enviar Evidências</h3>
+                  <p className="text-xs text-[#606070] font-medium leading-relaxed max-w-[200px] text-center">
+                    Selecione até 4 fotos para criar um grid automático de treino.
+                  </p>
                 </label>
-              </div>
+              )}
+
+              {/* â”€â”€ Image cards (visible once files are added) â”€â”€ */}
+              <AnimatePresence>
+                {previewUrls.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 12 }}
+                    className="space-y-4"
+                  >
+                    {previewUrls.map((url, idx) => (
+                      <motion.div
+                        key={url}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 8 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className="bg-[#050505] border border-white/[0.06] rounded-2xl overflow-hidden"
+                      >
+                        {/* Full-image preview â€” object-contain, no crop */}
+                        <div className="relative w-full bg-black flex items-center justify-center">
+                          <img
+                            src={url}
+                            alt={`Foto ${idx + 1}`}
+                            className="w-full max-h-[260px] object-contain block"
+                          />
+                          {/* Badge */}
+                          <div className="absolute top-3 left-3 px-2.5 py-1 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10">
+                            <span className="text-[9px] font-black text-white uppercase tracking-widest">Foto {idx + 1}</span>
+                          </div>
+                          {/* Remove button */}
+                          <button
+                            onClick={(e) => removeFile(idx, e)}
+                            className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/70 backdrop-blur-sm border border-white/10 text-[#606070] hover:bg-red-500 hover:text-white hover:border-red-500 transition-all flex items-center justify-center"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+
+                        {/* Position slider */}
+                        <div className="px-4 py-3 border-t border-white/[0.06]">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[9px] font-black text-[#606070] uppercase tracking-widest">Posição no grid</span>
+                            <span className="text-[9px] font-black text-[#CCCC00]">
+                              {imageOffsets[idx] <= 30 ? '▲ Topo' : imageOffsets[idx] >= 70 ? '▼ Base' : '● Centro'}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={imageOffsets[idx]}
+                            onChange={(e) => {
+                              const newOffsets = [...imageOffsets];
+                              newOffsets[idx] = parseInt(e.target.value);
+                              setImageOffsets(newOffsets);
+                            }}
+                            className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-[#CCCC00]"
+                          />
+                          <div className="flex justify-between mt-1">
+                            <span className="text-[7px] text-[#303035] font-bold uppercase">Topo</span>
+                            <span className="text-[7px] text-[#303035] font-bold uppercase">Base</span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+
+                    {/* Add more button */}
+                    {proofFiles.length < 4 && (
+                      <label className="flex items-center justify-center gap-3 border border-dashed border-white/10 rounded-2xl p-4 cursor-pointer hover:border-[#CCCC00]/30 hover:bg-[#CCCC00]/[0.02] transition-all group">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-[#606070] group-hover:text-[#CCCC00] group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/20 transition-all">
+                          <Camera size={15} />
+                        </div>
+                        <span className="text-[10px] font-black text-[#606070] uppercase tracking-widest group-hover:text-white transition-colors">
+                          Adicionar foto ({proofFiles.length}/4)
+                        </span>
+                      </label>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </section>
 
             <div className="space-y-8">
