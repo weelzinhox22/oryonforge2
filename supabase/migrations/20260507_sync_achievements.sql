@@ -1,0 +1,64 @@
+-- Robust Cleanup and Synchronization
+-- 1. Remove duplicate achievements based on title before adding constraint
+DELETE FROM achievements
+WHERE id IN (
+    SELECT id
+    FROM (
+        SELECT id,
+               ROW_NUMBER() OVER (PARTITION BY title ORDER BY created_at DESC) as row_num
+        FROM achievements
+    ) t
+    WHERE t.row_num > 1
+);
+
+-- 2. Add unique constraint safely
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'achievements_title_unique') THEN
+        ALTER TABLE achievements ADD CONSTRAINT achievements_title_unique UNIQUE (title);
+    END IF;
+END $$;
+
+-- 3. Upsert all achievements with correct image paths
+INSERT INTO achievements (title, description, icon_url, category, requirement_type, requirement_value) VALUES
+('Projeto Verão', 'Registrou 20 atividades físicas.', '/conquistas/projetoverao.png', 'individual', 'workouts', 20),
+('Modo Caverna', 'Treinou 7 dias seguidos sem faltar.', '/conquistas/modocaverna.png', 'individual', 'streak', 7),
+('Tanque de Guerra', 'Acumulou 100 pontos totais.', '/conquistas/tanquedeguerra.png', 'individual', 'points', 100),
+('Cardio? Nunca Nem Vi', 'Fez 15 treinos sem registrar corrida.', '/conquistas/cardionuncanemvi.png', 'individual', 'specific_workout', 15),
+('Pernas em Dia', 'Registrou 5 treinos de perna.', '/conquistas/pernasemdia.png', 'individual', 'leg_workouts', 5),
+('CEO da Academia', 'Criou o primeiro grupo.', '/conquistas/CEOdaacademia.png', 'group', 'groups_created', 1),
+('Só Observando', 'Entrou no app 30 vezes sem registrar atividade.', '/conquistas/soobservando.png', 'individual', 'logins', 30),
+('Treino Relâmpago', 'Registrou uma atividade em menos de 15 minutos.', '/conquistas/treinorelampago.png', 'individual', 'duration_short', 15),
+('Monstro do Cardio', 'Correu mais de 50km acumulados.', '/conquistas/mestredocardio.png', 'individual', 'distance', 50),
+('Patrão do Ranking', 'Ficou em 1º lugar no grupo.', '/conquistas/patraodoranking.png', 'group', 'rank_top1', 1),
+('Medalha de Bronze', 'Terminou um ciclo em 3º lugar.', '/conquistas/medalhadebronze.png', 'group', 'rank_top3', 1),
+('Medalha de Prata', 'Terminou um ciclo em 2º lugar.', '/conquistas/medalhadeprata.png', 'group', 'rank_top2', 1),
+('Campeão do Grupo', 'Terminou um ciclo em 1º lugar.', '/conquistas/campeaodogrupo.png', 'group', 'rank_top1_final', 1),
+('Modo Insano', 'Registrou 3 atividades no mesmo dia.', '/conquistas/modoinsano.png', 'individual', 'daily_logs', 3),
+('Humilde Graças a Deus', 'Perdeu o topo do ranking após liderar.', '/conquistas/humildegracasadeus.png', 'group', 'lost_rank', 1),
+('Treinou Até na Chuva', 'Registrou atividade em 3 dias chuvosos.', '/conquistas/treinouatenachuva.png', 'individual', 'weather_rain', 3),
+('O Sobrevivente', 'Voltou a treinar após 10 dias parado.', '/conquistas/osobrevivente.png', 'individual', 'comeback', 1),
+('Upload Guerreiro', 'Enviou 25 fotos de comprovação.', '/conquistas/uploadguerreiro.png', 'individual', 'uploads', 25),
+('O Fotogênico', 'Recebeu 20 curtidas nas atividades.', '/conquistas/ofotogenico.png', 'group', 'likes_received', 20),
+('Gym Rat', 'Registrou 50 treinos de musculação.', '/conquistas/gymrat.png', 'individual', 'gym_workouts', 50),
+('Maratonista de Aplicativo', 'Abriu o app 100 vezes.', '/conquistas/maratonistadeapp.png', 'individual', 'opens', 100),
+('O Viciado', 'Registrou atividade por 15 dias seguidos.', '/conquistas/oviciado.png', 'individual', 'streak', 15),
+('Fake Natty', 'Acumulou mais de 500 pontos.', '/conquistas/fakenatty.png', 'individual', 'points', 500),
+('Treino e Caos', 'Registrou atividade em 5 modalidades diferentes.', '/conquistas/treinoecaos.png', 'individual', 'activity_types', 5),
+('Influencer Fitness', 'Convidou 5 amigos para grupos.', '/conquistas/influencrfitness.png', 'group', 'invites', 5),
+('O Imparável', 'Concluiu 100 atividades.', '/conquistas/oimparavel.png', 'individual', 'workouts', 100),
+('Shape Falante', 'Comentou 30 vezes no feed.', '/conquistas/shapefalante.png', 'group', 'comments', 30),
+('Disciplina Militar', 'Manteve streak de 30 dias.', '/conquistas/disciplinamilitar.png', 'individual', 'streak', 30),
+('Treino Nutella', 'Registrou caminhada como atividade principal.', '/conquistas/treinonutella.png', 'individual', 'walks', 10),
+('Brabo Demais', 'Ultrapassou alguém no ranking 10 vezes.', '/conquistas/brabodemais.png', 'group', 'rank_overtake', 10),
+('O Último Romântico', 'Continuou treinando enquanto todo o grupo ficou inativo.', '/conquistas/oultimoromantico.png', 'group', 'solo_active', 1),
+('Contrato Vitalício com a Dor', 'Fez 20 treinos consecutivos.', '/conquistas/contratovitaliciocomador.png', 'individual', 'streak', 20)
+ON CONFLICT (title) DO UPDATE SET
+    description = EXCLUDED.description,
+    icon_url = EXCLUDED.icon_url,
+    category = EXCLUDED.category,
+    requirement_type = EXCLUDED.requirement_type,
+    requirement_value = EXCLUDED.requirement_value;
+
+-- 4. Final cleanup for any remaining inconsistency
+DELETE FROM achievements WHERE icon_url LIKE '/icons/%';

@@ -1,0 +1,20 @@
+{
+  "name": "Oryon Forge",
+  "short_name": "Oryon Forge",
+  "description": "Plataforma fitness social — desafios, atividades e ranking.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait",
+  "categories": ["fitness", "sports"],
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/oryonforgeico.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
