@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import OnboardingModal from '@/components/OnboardingModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
+import ScrollToTop from '@/components/ScrollToTop';
 
 export const metadata: Metadata = {
   title: 'Oryon Forge',
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen bg-black text-[#F0F0F6] overflow-x-hidden antialiased" suppressHydrationWarning>
+        <ScrollToTop />
         {children}
         <OnboardingModal />
         <PWAInstallBanner />

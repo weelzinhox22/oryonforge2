@@ -196,13 +196,13 @@ function RegistroActivityContent() {
 
     const totalFiles = proofFiles.length + files.length;
     if (totalFiles > 4) {
-      setToast({ isVisible: true, message: 'MÃƒÂ¡ximo de 4 fotos permitido.', type: 'error' });
+      setToast({ isVisible: true, message: 'Máximo de 4 fotos permitido.', type: 'error' });
       return;
     }
 
     const validFiles = files.filter(file => {
       if (file.size > 5 * 1024 * 1024) {
-        setToast({ isVisible: true, message: `O arquivo ${file.name} ÃƒÂ© muito grande (MÃƒÂ¡x: 5MB).`, type: 'error' });
+        setToast({ isVisible: true, message: `O arquivo ${file.name} é muito grande (Máx: 5MB).`, type: 'error' });
         return false;
       }
       return true;
@@ -320,25 +320,25 @@ function RegistroActivityContent() {
       return;
     }
     if (proofFiles.length === 0) {
-      setToast({ isVisible: true, message: 'A ComprovaÃ§Ã£o visual ÃƒÂ© obrigatÃƒÂ³ria.', type: 'error' });
+      setToast({ isVisible: true, message: 'A Comprovação visual é obrigatória.', type: 'error' });
       return;
     }
     if (!groupId) {
-      setToast({ isVisible: true, message: 'ID do grupo nÃƒÂ£o identificado.', type: 'error' });
+      setToast({ isVisible: true, message: 'ID do grupo não identificado.', type: 'error' });
       return;
     }
     
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('SessÃ£o expirada.');
+      if (!session) throw new Error('Sessão expirada.');
 
       // 0. Check Daily Limit and Time Constraints
       const now = new Date();
       const hour = now.getHours();
       
       if (hour === 0) {
-        setToast({ isVisible: true, message: 'HorÃƒÂ¡rio bloqueado! Nada de treinos ÃƒÂ  meia-noite.', type: 'error' });
+        setToast({ isVisible: true, message: 'Horário bloqueado! Nada de treinos à meia-noite.', type: 'error' });
         setIsSubmitting(false);
         return;
       }
@@ -358,7 +358,7 @@ function RegistroActivityContent() {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         if (diffDays > 45) {
-          setToast({ isVisible: true, message: 'O desafio de 45 dias jÃƒÂ¡ encerrou para este grupo.', type: 'error' });
+          setToast({ isVisible: true, message: 'O desafio de 45 dias já encerrou para este grupo.', type: 'error' });
           setIsSubmitting(false);
           return;
         }
@@ -474,7 +474,7 @@ function RegistroActivityContent() {
                 Registro de Atividade
               </h1>
               <p className="text-[#606070] text-sm md:text-base font-medium max-w-xl">
-                Selecione sua modalidade e anexe a ComprovaÃ§Ã£o para validar seu esforÃƒÂ§o diÃƒÂ¡rio.
+                Selecione sua modalidade e anexe a Comprovação para validar seu esforço diário.
               </p>
             </div>
           </div>
@@ -553,7 +553,7 @@ function RegistroActivityContent() {
             {selectedSports.length > 0 && (
               <section>
                 <div className="flex items-center gap-3 mb-8">
-                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do EsforÃƒÂ§o</h2>
+                  <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 2: Detalhes do Esforço</h2>
                   <div className="h-px flex-1 bg-white/5" />
                 </div>
                 
@@ -598,7 +598,7 @@ function RegistroActivityContent() {
           <div className="lg:col-span-4 space-y-10">
             <section>
               <div className="flex items-center gap-3 mb-8">
-                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: ComprovaÃ§Ã£o</h2>
+                <h2 className="text-xs font-black text-[#606070] uppercase tracking-[0.3em]">Passo 3: Comprovação</h2>
                 <div className="h-px flex-1 bg-white/5" />
               </div>
 
@@ -615,9 +615,9 @@ function RegistroActivityContent() {
                   <div className="w-24 h-24 rounded-[2.5rem] bg-white/[0.02] border border-white/5 flex items-center justify-center mb-8 group-hover:scale-110 group-hover:bg-[#CCCC00]/10 group-hover:border-[#CCCC00]/30 transition-all duration-700">
                     <UploadCloud size={40} strokeWidth={1} className="text-[#606070] group-hover:text-[#CCCC00] group-hover:animate-bounce" />
                   </div>
-                  <h3 className="text-lg font-black text-white mb-2">Enviar EvidÃªncias</h3>
+                  <h3 className="text-lg font-black text-white mb-2">Enviar Evidências</h3>
                   <p className="text-xs text-[#606070] font-medium leading-relaxed max-w-[200px] text-center">
-                    Selecione atÃ© 4 fotos para criar um grid automÃ¡tico de treino.
+                    Selecione até 4 fotos para criar um grid automático de treino.
                   </p>
                 </label>
               )}
@@ -683,7 +683,7 @@ function RegistroActivityContent() {
                   <AlertCircle className="text-[#CCCC00]" size={20} />
                 </div>
                 <p className="text-[11px] text-[#606070] leading-relaxed font-medium">
-                  A pontuaÃ§Ã£o <span className="text-white font-bold">Ã© automÃ¡tica</span>. Auditorias periÃ³dicas sÃ£o realizadas; em caso de fraude, o administrador poderÃ¡ remover os pontos retroativamente.
+                  A pontuação <span className="text-white font-bold">é automática</span>. Auditorias periódicas são realizadas; em caso de fraude, o administrador poderá remover os pontos retroativamente.
                 </p>
               </div>
 

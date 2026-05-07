@@ -7,7 +7,6 @@ import BottomNav from '@/components/BottomNav';
 import Sidebar from '@/components/Sidebar';
 import Toast from '@/components/Toast';
 import LobbyView from '@/components/LobbyView';
-import TutorialOverlay from '@/components/TutorialOverlay';
 import { Outfit } from 'next/font/google';
 import { DotLottiePlayer } from '@dotlottie/react-player';
 

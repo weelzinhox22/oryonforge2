@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Activity, Trophy,
   Plus, Target, Medal, UserPlus,
-  Image as ImageIcon, Edit2, Save, X, Settings, Clock
+  Image as ImageIcon, Edit2, Save, X, Settings, Clock, BellRing
 } from 'lucide-react';
 import { Sora } from 'next/font/google';
 import { formatDistanceToNow, addDays, format } from 'date-fns';
@@ -47,6 +47,20 @@ export default function DashboardView({
   const router = useRouter();
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [pushEnabled, setPushEnabled] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPushEnabled(Notification.permission === 'granted' || Notification.permission === 'denied');
+    }
+  }, []);
+
+  const requestNotification = async () => {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      setPushEnabled(permission === 'granted' || permission === 'denied');
+    }
+  };
 
   const handleSavePoints = (user: any) => {
     if (onUpdatePoints && editingUserId) {
@@ -139,6 +153,25 @@ export default function DashboardView({
       </header>
 
       <main className={`px-6 md:px-12 pb-24 max-w-[1400px] mx-auto relative z-10 ${isMinimalist ? 'space-y-10 mt-10' : 'space-y-16'}`}>
+        {!pushEnabled && (
+          <div className="bg-[#CCCC00]/10 border border-[#CCCC00]/30 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 w-full shadow-lg">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="w-10 h-10 rounded-full bg-[#CCCC00]/20 flex items-center justify-center shrink-0">
+                <BellRing size={18} className="text-[#CCCC00] animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-black text-white">Ative as Notificações</p>
+                <p className="text-xs text-[#CCCC00]/70 font-medium">Não perca as atualizações do seu grupo.</p>
+              </div>
+            </div>
+            <button 
+              onClick={requestNotification}
+              className="w-full sm:w-auto px-6 py-2.5 bg-[#CCCC00] text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-[#ebd600] transition-all whitespace-nowrap shrink-0 shadow-[0_0_15px_rgba(204,204,0,0.3)]"
+            >
+              Ativar Push
+            </button>
+          </div>
+        )}
         
         {/* HERO SECTION */}
         {isMinimalist ? (
