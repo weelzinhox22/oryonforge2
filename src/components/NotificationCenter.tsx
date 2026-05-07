@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Bell, Trophy, Heart, MessageCircle, TrendingUp, X } from 'lucide-react';
+import { Bell, Trophy, Heart, MessageCircle, TrendingUp, X, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -65,12 +65,24 @@ export default function NotificationCenter() {
     setUnreadCount(0);
   };
 
+  const requestPushPermission = async () => {
+    if (!('Notification' in window)) return;
+    
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      console.log('Permissão concedida para notificações push.');
+      // Here you would normally register a service worker and save the subscription
+      // to the push_subscriptions table in Supabase.
+    }
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'achievement': return <Trophy size={14} className="text-[#CCCC00]" />;
-      case 'kudo': return <Heart size={14} className="text-red-500" />;
-      case 'comment': return <MessageCircle size={14} className="text-blue-500" />;
-      case 'rank_up': return <TrendingUp size={14} className="text-green-500" />;
+      case 'like': return <Heart size={14} className="text-[#CCCC00]" />;
+      case 'comment': return <MessageCircle size={14} className="text-[#CCCC00]" />;
+      case 'ranking_loss': return <TrendingUp size={14} className="text-red-500" />;
+      case 'broadcast': return <Sparkles size={14} className="text-[#CCCC00]" />;
       default: return <Bell size={14} className="text-[#808090]" />;
     }
   };
@@ -107,9 +119,19 @@ export default function NotificationCenter() {
             >
               <div className="p-8 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
                 <h3 className="text-[10px] font-black text-white uppercase tracking-[0.2em]">Notificações</h3>
-                <button onClick={() => setIsOpen(false)} className="text-[#303035] hover:text-white transition-colors">
-                  <X size={14} />
-                </button>
+                <div className="flex items-center gap-4">
+                  {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default' && (
+                    <button 
+                      onClick={requestPushPermission}
+                      className="text-[8px] font-black text-[#CCCC00] uppercase tracking-widest hover:underline"
+                    >
+                      Ativar Push
+                    </button>
+                  )}
+                  <button onClick={() => setIsOpen(false)} className="text-[#303035] hover:text-white transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
 
               <div className="max-h-[400px] overflow-y-auto custom-scrollbar">

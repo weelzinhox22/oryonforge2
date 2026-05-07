@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, User, ScrollText, Activity, LogOut, 
   ChevronLeft, ChevronRight, Settings, Shield, Trophy,
-  Zap, Calendar, HelpCircle
+  Zap, Calendar, HelpCircle, Megaphone
 } from 'lucide-react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,7 +40,7 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
     { href: '/ranking', icon: Shield, label: 'Rankings' },
     { href: '/registro', icon: Activity, label: 'Atividades' },
     { href: '/perfil', icon: User, label: 'Perfil' },
-    { href: '/perfil', icon: Settings, label: 'Configurações', key: 'configuracoes' },
+    ...(profile?.role === 'admin' ? [{ href: '/admin/notificacoes', icon: Megaphone, label: 'Admin' }] : []),
   ];
 
   return (
