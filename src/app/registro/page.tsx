@@ -546,7 +546,7 @@ function RegistroActivityContent() {
               
               <div className="relative group">
                 <label className={`block w-full rounded-[2.5rem] border-2 border-dashed transition-all duration-500 cursor-pointer overflow-hidden aspect-square flex flex-col items-center justify-center relative ${
-                  previewUrl 
+                  previewUrls.length > 0 
                     ? 'border-[#CCCC00]/40 bg-[#050505]' 
                     : 'border-white/5 bg-[#050505] hover:border-[#CCCC00]/30 hover:bg-[#CCCC00]/[0.02] shadow-2xl'
                 }`}>
