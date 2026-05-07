@@ -218,6 +218,9 @@ export default function ProfilePage() {
                       LVL {userProfile?.level || 1}
                     </span>
                   </div>
+                  <div className="text-[11px] font-bold text-[#404045] uppercase tracking-widest mb-4">
+                    {userProfile?.email}
+                  </div>
                   <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                     <span className="px-3 py-1 bg-white/5 text-[#F0F0F6] text-[9px] font-black uppercase tracking-widest rounded-full border border-white/10 flex items-center gap-1.5">
                       <ShieldCheck size={10} className="text-[#CCCC00]" /> {userProfile?.title || 'Recruta'}

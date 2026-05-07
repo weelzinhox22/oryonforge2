@@ -281,6 +281,7 @@ function UserList({ supabase }: { supabase: any }) {
                     <span className="px-1.5 py-0.5 bg-[#CCCC00] text-black text-[7px] font-black rounded uppercase">Admin</span>
                   )}
                 </div>
+                <div className="text-[10px] text-[#404045] font-bold mb-1">{user.email}</div>
                 <div className="flex items-center gap-2 text-[9px] text-[#606070] font-black uppercase tracking-widest">
                   <span>LVL {user.level || 1}</span>
                   <span className="w-1 h-1 rounded-full bg-white/10" />
