@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, User, Activity, Trophy, Shield } from 'lucide-react';
+import { LayoutDashboard, User, Activity, Trophy, ScrollText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { sounds } from '@/lib/sounds';
 
@@ -12,7 +12,7 @@ export default function BottomNav() {
   const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, label: 'Painel' },
     { href: '/perfil/conquistas', icon: Trophy, label: 'Conquistas' },
-    { href: '/ranking', icon: Shield, label: 'Rankings' },
+    { href: '/regras', icon: ScrollText, label: 'Regras' },
     { href: '/registro', icon: Activity, label: 'Registro' },
     { href: '/perfil', icon: User, label: 'Perfil' },
   ];

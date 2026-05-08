@@ -359,8 +359,9 @@ export default function ProfilePage() {
           </section>
 
           {/* Settings Link Footer */}
-          <section className="mt-16 pt-10 border-t border-white/[0.05]">
+          <section id="tutorial-visual" className="mt-16 pt-10 border-t border-white/[0.05]">
             <button
+              id="tutorial-nav"
               onClick={() => router.push('/perfil/configuracoes')}
               className="w-full flex items-center justify-between p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:border-[#CCCC00]/20 hover:bg-[#CCCC00]/5 transition-all group"
             >

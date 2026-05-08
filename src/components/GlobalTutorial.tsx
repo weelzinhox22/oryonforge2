@@ -41,15 +41,20 @@ export default function GlobalTutorial() {
   return (
     <TutorialOverlay 
       isVisible={true}
-      onComplete={async () => {
+      onComplete={async (dontShowAgain: boolean) => {
         try {
-          const newPrefs = { ...userProfile.ui_preferences, has_seen_tutorial: true };
-          await supabase
-            .from('profiles')
-            .update({ ui_preferences: newPrefs })
-            .eq('id', userProfile.id);
-          
-          setUserProfile({ ...userProfile, ui_preferences: newPrefs });
+          if (dontShowAgain) {
+            const newPrefs = { ...userProfile.ui_preferences, has_seen_tutorial: true };
+            await supabase
+              .from('profiles')
+              .update({ ui_preferences: newPrefs })
+              .eq('id', userProfile.id);
+            
+            setUserProfile({ ...userProfile, ui_preferences: newPrefs });
+          } else {
+            // Temporary dismiss, just hide it for this session by updating local state
+            setUserProfile({ ...userProfile, ui_preferences: { ...userProfile.ui_preferences, has_seen_tutorial: true } });
+          }
         } catch (e) {
           console.error('Erro ao salvar tutorial:', e);
         }

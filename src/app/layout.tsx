@@ -3,6 +3,7 @@ import './globals.css';
 import OnboardingModal from '@/components/OnboardingModal';
 import PWAInstallBanner from '@/components/PWAInstallBanner';
 import ScrollToTop from '@/components/ScrollToTop';
+import GlobalTutorial from '@/components/GlobalTutorial';
 
 export const metadata: Metadata = {
   title: 'Oryon Forge',
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ScrollToTop />
         {children}
         <OnboardingModal />
+        <GlobalTutorial />
         <PWAInstallBanner />
       </body>
     </html>

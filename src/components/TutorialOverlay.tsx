@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { ChevronRight, X, MousePointer2, Settings, User, LayoutGrid, Info } from 'lucide-react';
+import { ChevronRight, X, MousePointer2, Settings, User, LayoutGrid, Info, Check } from 'lucide-react';
 
 interface TutorialOverlayProps {
   isVisible: boolean;
-  onComplete: () => void;
+  onComplete: (dontShowAgain: boolean) => void;
 }
 
 export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverlayProps) {
@@ -16,7 +16,8 @@ export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverl
   const [step, setStep] = useState(0);
   const [show, setShow] = useState(false);
   const [spotlight, setSpotlight] = useState({ x: 0, y: 0, width: 0, height: 0, opacity: 0 });
-  const [tooltipPos, setTooltipPos] = useState({ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' });
+  const [tooltipPos, setTooltipPos] = useState<any>({ top: '50%', left: '50%', x: '-50%', y: '-50%', scale: 1 });
+  const [dontShowAgain, setDontShowAgain] = useState(true);
 
   const steps = [
     {
@@ -100,21 +101,30 @@ export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverl
             opacity: 1
           });
 
-          // Posiciona o tooltip acima ou abaixo do elemento
-          const isAtBottom = rect.top > window.innerHeight / 2;
-          if (isAtBottom) {
-            setTooltipPos({
-              top: `${rect.top - 20}px`,
-              left: `${rect.left + rect.width / 2}px`,
-              transform: 'translate(-50%, -100%)'
-            });
-          } else {
-            setTooltipPos({
-              top: `${rect.bottom + 20}px`,
-              left: `${rect.left + rect.width / 2}px`,
-              transform: 'translate(-50%, 0)'
-            });
+          // Lógica de posicionamento conforme a etapa (step)
+          let pos: any = { left: '50%', x: '-50%', y: '0%' };
+          let scale = 1;
+          
+          if (step === 0 || step === 1) {
+            // Dica 1 e 2: parte inferior centralizado
+            pos.bottom = '32px';
+            pos.x = '-50%';
+            pos.y = '0%';
+          } else if (step === 2) {
+            // Dica 3: diminui de tamanho e vai para o topo centralizado
+            pos.top = '32px';
+            pos.x = '-50%';
+            pos.y = '0%';
+            scale = 0.85;
+          } else if (step >= 3) {
+            // Dica 4 e 5: expande pro tamanho normal e fica centralizado no meio da tela
+            pos.top = '50%';
+            pos.x = '-50%';
+            pos.y = '-50%';
+            scale = 1;
           }
+
+          setTooltipPos({ ...pos, scale });
         }, 600);
       } else {
         // Se o elemento não for encontrado (ex: carregando), tenta de novo em breve
@@ -160,9 +170,13 @@ export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverl
         {/* Tooltip Content */}
         <motion.div 
           key={step}
-          style={tooltipPos}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+          style={{ 
+            top: tooltipPos.top, 
+            bottom: tooltipPos.bottom, 
+            left: tooltipPos.left
+          }}
+          initial={{ opacity: 0, scale: 0.9, x: tooltipPos.x, y: tooltipPos.y }}
+          animate={{ opacity: 1, scale: tooltipPos.scale || 1, x: tooltipPos.x, y: tooltipPos.y }}
           transition={{ type: 'spring', damping: 25, stiffness: 150 }}
           className="absolute w-[calc(100%-48px)] max-w-sm bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] shadow-2xl pointer-events-auto overflow-hidden z-[210]"
         >
@@ -177,7 +191,7 @@ export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverl
               <button 
                 onClick={() => {
                   setShow(false);
-                  onComplete();
+                  onComplete(dontShowAgain);
                 }}
                 className="text-[#303035] hover:text-white transition-colors"
               >
@@ -190,30 +204,46 @@ export default function TutorialOverlay({ isVisible, onComplete }: TutorialOverl
               <p className="text-sm text-[#606070] font-medium leading-relaxed">{currentStep.desc}</p>
             </div>
 
-            <div className="pt-2 flex items-center justify-between gap-4">
-              <button 
-                onClick={() => {
-                  setShow(false);
-                  onComplete();
-                }}
-                className="text-[10px] font-bold text-[#303035] uppercase tracking-widest hover:text-[#606070] transition-colors"
+            <div className="pt-2 flex flex-col gap-4">
+              <label 
+                className="flex items-center gap-2 cursor-pointer group w-fit"
+                onClick={() => setDontShowAgain(!dontShowAgain)}
               >
-                Pular
-              </button>
-              <button 
-                onClick={() => {
-                  if (step < steps.length - 1) {
-                    setStep(s => s + 1);
-                  } else {
+                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                  dontShowAgain ? 'bg-[#CCCC00] border-[#CCCC00]' : 'border-[#606070] group-hover:border-[#CCCC00]'
+                }`}>
+                  {dontShowAgain && <Check size={12} className="text-black" />}
+                </div>
+                <span className="text-[11px] font-semibold text-[#606070] group-hover:text-white transition-colors">
+                  Não mostrar novamente
+                </span>
+              </label>
+
+              <div className="flex items-center justify-between gap-4">
+                <button 
+                  onClick={() => {
                     setShow(false);
-                    onComplete();
-                  }
-                }}
-                className="h-11 px-6 rounded-xl bg-[#CCCC00] text-black font-black uppercase text-[10px] tracking-[0.2em] hover:bg-[#E6E600] transition-all flex items-center gap-2 shadow-lg shadow-[#CCCC00]/20"
-              >
-                {step === steps.length - 1 ? "Entendido" : "Continuar"}
-                {step < steps.length - 1 && <ChevronRight size={14} />}
-              </button>
+                    onComplete(dontShowAgain);
+                  }}
+                  className="text-[10px] font-bold text-[#303035] uppercase tracking-widest hover:text-[#606070] transition-colors"
+                >
+                  Pular
+                </button>
+                <button 
+                  onClick={() => {
+                    if (step < steps.length - 1) {
+                      setStep(s => s + 1);
+                    } else {
+                      setShow(false);
+                      onComplete(dontShowAgain);
+                    }
+                  }}
+                  className="h-11 px-6 rounded-xl bg-[#CCCC00] text-black font-black uppercase text-[10px] tracking-[0.2em] hover:bg-[#E6E600] transition-all flex items-center gap-2 shadow-lg shadow-[#CCCC00]/20"
+                >
+                  {step === steps.length - 1 ? "Entendido" : "Continuar"}
+                  {step < steps.length - 1 && <ChevronRight size={14} />}
+                </button>
+              </div>
             </div>
           </div>
         </motion.div>
