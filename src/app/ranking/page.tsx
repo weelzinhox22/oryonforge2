@@ -9,9 +9,8 @@ import {
 } from 'lucide-react';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
-import ShareCard from '@/components/ShareCard';
 import { useRouter } from 'next/navigation';
-import { DotLottiePlayer } from '@dotlottie/react-player';
+import BottomNav from '@/components/BottomNav';
 
 const pjs = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'] });
 
@@ -21,8 +20,6 @@ export default function GlobalRankingPage() {
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [streak, setStreak] = useState(0);
-  const [showShareCard, setShowShareCard] = useState(false);
-  const [shareData, setShareData] = useState<any>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -69,25 +66,12 @@ export default function GlobalRankingPage() {
   const top3 = ranking.slice(0, 3);
   const rest = ranking.slice(3);
 
-  const handleShareRank = () => {
-    if (!userProfile || myRank === 0) return;
-    
-    setShareData({
-      type: 'activity', // Usando estilo de atividade para o rank
-      title: `RANKING GLOBAL`,
-      subtitle: `POSIO #${myRank}`,
-      value: userProfile.total_points || ranking[myRankIdx]?.total_points || 0,
-      username: userProfile.username,
-      date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toUpperCase()
-    });
-    setShowShareCard(true);
-  };
 
   return (
     <div className={`flex min-h-screen bg-black text-[#F0F0F6] ${pjs.className}`}>
       <Sidebar onSignOut={handleSignOut} />
       
-      <main className="flex-1 relative overflow-y-auto overflow-x-hidden">
+      <main className="flex-1 relative pb-24 md:pb-0 overflow-y-auto overflow-x-hidden">
         {/* Ambient background decoration */}
         <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-[#CCCC00]/[0.04] to-transparent pointer-events-none" />
         
@@ -95,17 +79,26 @@ export default function GlobalRankingPage() {
           
           {/* Header */}
           <header className="mb-16">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
-              <span className="text-[10px] font-black text-[#CCCC00] uppercase tracking-[0.3em]">Performance Mundial</span>
-            </div>
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="flex items-center gap-4 mb-10">
+              <button
+                onClick={() => router.back()}
+                className="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all active:scale-95"
+              >
+                <ChevronLeft size={20} className="text-[#808090]" />
+              </button>
               <div>
-                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2 uppercase italic">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#CCCC00]" />
+                  <span className="text-[10px] font-black text-[#CCCC00] uppercase tracking-[0.3em]">Performance Mundial</span>
+                </div>
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white uppercase italic">
                   Ranking Global
                 </h1>
-                <p className="text-[#606070] text-sm font-medium">Os melhores atletas da rede Oryon Forge em tempo real.</p>
               </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+              <p className="text-[#606070] text-sm font-medium">Os melhores atletas da rede Oryon Forge em tempo real.</p>
               
               {userProfile && (
                 <div className="bg-[#0A0A0A] border border-white/5 rounded-2xl px-6 py-4 flex items-center gap-6">
@@ -118,14 +111,6 @@ export default function GlobalRankingPage() {
                     <p className="text-[10px] font-black text-[#303035] uppercase tracking-widest mb-1">Seu Streak</p>
                     <p className="text-xl font-black text-[#CCCC00]">{streak}</p>
                   </div>
-                  <div className="w-px h-8 bg-white/5" />
-                  <button 
-                    onClick={handleShareRank}
-                    className="w-10 h-10 rounded-xl bg-[#CCCC00]/10 border border-[#CCCC00]/20 flex items-center justify-center text-[#CCCC00] hover:bg-[#CCCC00]/20 transition-all active:scale-90"
-                    title="Compartilhar Rank"
-                  >
-                    <Share2 size={16} />
-                  </button>
                 </div>
               )}
             </div>
@@ -307,13 +292,7 @@ export default function GlobalRankingPage() {
         </div>
       </main>
 
-      {shareData && (
-        <ShareCard 
-          isOpen={showShareCard}
-          onClose={() => setShowShareCard(false)}
-          data={shareData}
-        />
-      )}
+      <BottomNav />
     </div>
   );
 }

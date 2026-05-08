@@ -317,7 +317,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="text-left flex-1">
                     <span className={`block text-[11px] font-black uppercase tracking-widest ${userProfile?.selected_achievement_id === ach.id ? 'text-[#CCCC00]' : 'text-white'}`}>
-                      {ach.title_name || ach.title}
+                      {userProfile?.gender === 'female' && ach.title_name_female ? ach.title_name_female : (ach.title_name || ach.title)}
                     </span>
                     <span className="text-[9px] font-bold text-[#404045] uppercase tracking-wider mt-0.5">Desbloqueado em {ach.title}</span>
                   </div>

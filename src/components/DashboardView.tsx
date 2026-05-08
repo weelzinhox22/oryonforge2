@@ -338,16 +338,23 @@ export default function DashboardView({
                           )}
                         </div>
                         
-                        <div className={`rounded-full flex items-center justify-center shrink-0 border transition-transform group-hover:scale-105 overflow-hidden ${
-                          isMinimalist ? 'w-8 h-8' : 'w-10 h-10 md:w-12 md:h-12'
-                        } ${isMe ? 'bg-[#CCCC00]/10 border-[#CCCC00]/30' : 'bg-white/5 border-white/10'}`}>
-                          {user.avatarUrl ? (
-                            <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
-                          ) : (
-                            <span className={`font-black ${isMinimalist ? 'text-xs' : 'text-sm md:text-base'} ${isMe ? 'text-[#CCCC00]' : 'text-[#808090]'}`}>
-                              {user.username.charAt(0).toUpperCase()}
-                            </span>
+                        <div className="relative shrink-0">
+                          {position === 1 && (
+                            <div className="absolute inset-[-20%] z-20 pointer-events-none">
+                              <img src="/molduratop1.png" className="w-full h-full object-contain" alt="Moldura Top 1" />
+                            </div>
                           )}
+                          <div className={`rounded-full flex items-center justify-center border transition-transform group-hover:scale-105 overflow-hidden ${
+                            isMinimalist ? 'w-8 h-8' : 'w-10 h-10 md:w-12 md:h-12'
+                          } ${isMe ? 'bg-[#CCCC00]/10 border-[#CCCC00]/30' : 'bg-white/5 border-white/10'}`}>
+                            {user.avatarUrl ? (
+                              <img src={user.avatarUrl} alt={user.username} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className={`font-black ${isMinimalist ? 'text-xs' : 'text-sm md:text-base'} ${isMe ? 'text-[#CCCC00]' : 'text-[#808090]'}`}>
+                                {user.username.charAt(0).toUpperCase()}
+                              </span>
+                            )}
+                          </div>
                         </div>
  
                         <div className="flex flex-col">
