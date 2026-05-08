@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, User, Activity, Trophy, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { sounds } from '@/lib/sounds';
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -27,6 +28,7 @@ export default function BottomNav() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => sounds.playTap()}
               className="relative flex flex-col items-center justify-center w-16 h-12"
             >
               <div

@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { sounds } from '@/lib/sounds';
 
 export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
   const pathname = usePathname();
@@ -87,6 +88,7 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
             <Link
               key={`${item.label}-${idx}`}
               href={item.href}
+              onClick={() => sounds.playTap()}
               className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl transition-all duration-300 relative group ${
                 isActive 
                   ? 'text-white bg-white/[0.05] border border-white/[0.05]' 
@@ -115,6 +117,7 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
         {/* Profile Quick Access */}
         <Link 
           href="/perfil"
+          onClick={() => sounds.playTap()}
           className={`flex items-center gap-3.5 px-3 py-3 w-full rounded-2xl hover:bg-white/[0.02] transition-all group ${isCollapsed ? 'justify-center' : ''}`}
         >
           <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 overflow-hidden shrink-0 flex items-center justify-center">
@@ -138,7 +141,10 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
         </Link>
 
         <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          onClick={() => {
+            sounds.playTap();
+            setIsCollapsed(!isCollapsed);
+          }}
           className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-2xl text-[13px] font-semibold text-[#606070] hover:bg-white/[0.02] hover:text-white transition-all group ${isCollapsed ? 'justify-center' : ''}`}
         >
           {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -146,7 +152,10 @@ export default function Sidebar({ onSignOut }: { onSignOut: () => void }) {
         </button>
 
         <button
-          onClick={onSignOut}
+          onClick={() => {
+            sounds.playTap();
+            onSignOut();
+          }}
           className={`flex items-center gap-3.5 px-4 py-3 w-full rounded-2xl text-[13px] font-semibold text-[#606070] hover:bg-red-500/10 hover:text-red-500 transition-all group ${isCollapsed ? 'justify-center' : ''}`}
         >
           <LogOut size={18} />

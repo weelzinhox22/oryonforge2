@@ -15,6 +15,7 @@ import ImageCropEditor from '@/components/ImageCropEditor';
 import { ACTIVITIES } from '@/lib/activities';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { DotLottiePlayer } from '@dotlottie/react-player';
+import { sounds } from '@/lib/sounds';
 
 const ICON_MAP: Record<string, any> = {
   musculacao: Dumbbell,
@@ -454,6 +455,7 @@ function RegistroActivityContent() {
 
       if (error) throw error;
 
+      sounds.playSuccess();
       setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas! Total: ${totalPointsToAward.toFixed(2)} pts`, type: 'success' });
       
       await new Promise(r => setTimeout(r, 1500));
@@ -509,7 +511,10 @@ function RegistroActivityContent() {
                 {userGroups.map((ug) => (
                   <button
                     key={ug.group_id}
-                    onClick={() => setGroupId(ug.group_id)}
+                    onClick={() => {
+                      sounds.playSelect();
+                      setGroupId(ug.group_id);
+                    }}
                     className={`p-5 rounded-2xl border transition-all flex items-center justify-between group ${
                       groupId === ug.group_id 
                         ? 'bg-[#CCCC00]/10 border-[#CCCC00]/40' 
@@ -550,6 +555,7 @@ function RegistroActivityContent() {
                     isMinimalist={isMinimalist}
                     isSelected={selectedSports.includes(act.id)} 
                     onSelect={() => {
+                      sounds.playSelect();
                       if (selectedSports.includes(act.id)) {
                         setSelectedSports(selectedSports.filter(s => s !== act.id));
                       } else if (selectedSports.length < 4) {
