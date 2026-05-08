@@ -71,12 +71,7 @@ export default function GroupFeedPage() {
     fetchData();
   }, [groupId]);
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
-      <div className="w-40 h-40"><DotLottiePlayer src="/Loading.lottie" autoplay loop /></div>
-      <p className="text-[#CCCC00] text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Feed</p>
-    </div>
-  );
+  
 
   return (
     <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>

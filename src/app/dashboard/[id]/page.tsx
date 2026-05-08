@@ -217,23 +217,7 @@ export default function GroupDashboardPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center gap-6">
-        <div className="w-48 h-48">
-          <DotLottiePlayer
-            src="/Loading.lottie"
-            autoplay
-            loop
-          />
-        </div>
-        <div className="flex flex-col items-center gap-2">
-          <h2 className="text-[#CCCC00] font-black uppercase tracking-[0.3em] text-sm animate-pulse">Sincronizando Grupo</h2>
-          <p className="text-[#303035] text-[10px] font-bold uppercase tracking-widest">Preparando seu dashboard de performance...</p>
-        </div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className={`flex min-h-screen bg-[#050505] ${outfit.className}`}>

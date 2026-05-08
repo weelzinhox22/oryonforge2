@@ -168,13 +168,7 @@ export default function GroupSettingsPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#CCCC00] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  
 
   const startDate = new Date(activeGroup.created_at);
   const endDate = addDays(startDate, periodDays);

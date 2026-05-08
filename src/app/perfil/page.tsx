@@ -151,15 +151,6 @@ export default function ProfilePage() {
   };
 
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center gap-4">
-        <div className="w-10 h-10 rounded-full border-2 border-[#CCCC00]/20 border-t-[#CCCC00] animate-spin" />
-        <p className="text-[#303035] text-[10px] font-black uppercase tracking-[0.3em]">Carregando Perfil...</p>
-      </div>
-    );
-  }
-
   return (
     <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>
       <Sidebar onSignOut={() => supabase.auth.signOut()} />
@@ -395,3 +386,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

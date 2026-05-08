@@ -69,16 +69,7 @@ export default function MemberProfilePage() {
     if (userId) fetchData();
   }, [userId, supabase]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#000000] flex flex-col items-center justify-center gap-6">
-        <div className="w-32 h-32">
-          <DotLottiePlayer src="/Loading.lottie" autoplay loop />
-        </div>
-        <p className="text-[#303035] text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Sincronizando Identidade...</p>
-      </div>
-    );
-  }
+  
 
   if (!profile) {
     return (

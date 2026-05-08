@@ -103,15 +103,7 @@ export default function GroupAchievementsPage() {
     setShowShareCard(true);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#000000] flex items-center justify-center">
-        <div className="w-32 h-32">
-          <DotLottiePlayer src="/Loading.lottie" autoplay loop />
-        </div>
-      </div>
-    );
-  }
+  
 
   return (
     <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>

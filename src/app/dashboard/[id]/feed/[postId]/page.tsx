@@ -125,12 +125,7 @@ export default function PostDetailPage() {
     setIsSubmitting(false);
   };
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4">
-      <div className="w-36 h-36"><DotLottiePlayer src="/Loading.lottie" autoplay loop /></div>
-      <p className="text-[#CCCC00] text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Carregando Post</p>
-    </div>
-  );
+  
 
   if (!post) return (
     <div className="min-h-screen bg-black flex items-center justify-center">
