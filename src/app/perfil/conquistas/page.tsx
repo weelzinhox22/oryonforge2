@@ -59,7 +59,7 @@ export default function IndividualAchievementsPage() {
           .select('points, activity_type, distance_km, proof_url, weather_status, created_at')
           .eq('user_id', u_id);
 
-        const { data: streakData } = await supabase.rpc('calculate_user_streak', { u_id });
+        const { data: streakData } = await supabase.rpc('calculate_user_streak', { u_id_param: u_id });
         const { data: groupsCreated } = await supabase.from('groups').select('id', { count: 'exact' }).eq('admin_id', u_id);
         const { data: loginStats } = await supabase.from('user_logins').select('id', { count: 'exact' }).eq('user_id', u_id);
         
@@ -72,6 +72,11 @@ export default function IndividualAchievementsPage() {
           activity_types: new Set(logStats?.map(l => l.activity_type)).size || 0,
           rainy_workouts: new Set(logStats?.filter(l => l.weather_status === 'rain').map(l => l.created_at.split('T')[0])).size || 0,
           app_opens: loginStats?.length || 0,
+          logins: Math.max(0, (loginStats?.length || 0) - (logStats?.length || 0)),
+          gym_workouts: logStats?.filter(l => l.activity_type.toLowerCase().includes('musculação') || l.activity_type.toLowerCase().includes('academia') || l.activity_type.toLowerCase().includes('gym')).length || 0,
+          leg_workouts: logStats?.filter(l => l.activity_type.toLowerCase().includes('perna')).length || 0,
+          walks: logStats?.filter(l => l.activity_type.toLowerCase().includes('caminhada') || l.activity_type.toLowerCase().includes('walk')).length || 0,
+          specific_workout: logStats?.filter(l => !l.activity_type.toLowerCase().includes('corrida') && !l.activity_type.toLowerCase().includes('bike') && !l.activity_type.toLowerCase().includes('esteira')).length || 0,
           likes_received: 0, 
           comments: 0,
           groups_created: groupsCreated?.length || 0
@@ -87,17 +92,13 @@ export default function IndividualAchievementsPage() {
             case 'distance': current = stats.distance; break;
             case 'uploads': current = stats.uploads; break;
             case 'activity_types': current = stats.activity_types; break;
-            case 'rainy_workouts': 
-            case 'weather_rain': 
-              current = stats.rainy_workouts; break;
-            case 'app_opens':
-            case 'opens':
-            case 'logins':
-              current = stats.app_opens;
-              break;
-            case 'app_opens_no_activity':
-              current = 0; // Requires deep login tracking
-              break;
+            case 'weather_rain': current = stats.rainy_workouts; break;
+            case 'opens': current = stats.app_opens; break;
+            case 'logins': current = stats.logins; break;
+            case 'gym_workouts': current = stats.gym_workouts; break;
+            case 'leg_workouts': current = stats.leg_workouts; break;
+            case 'walks': current = stats.walks; break;
+            case 'specific_workout': current = stats.specific_workout; break;
             case 'groups_created': current = stats.groups_created; break;
             default: current = 0;
           }

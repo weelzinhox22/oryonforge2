@@ -183,6 +183,7 @@ function RegistroActivityContent() {
   }, [searchParams]);
   const [selectedSports, setSelectedSports] = useState<string[]>([]);
   const [sportValues, setSportValues] = useState<Record<string, string>>({});
+  const [sportDistances, setSportDistances] = useState<Record<string, string>>({});
   const [proofFiles, setProofFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [imageOffsets, setImageOffsets] = useState<{x: number, y: number}[]>([]); // 0 to 100 for X/Y axis
@@ -407,17 +408,28 @@ function RegistroActivityContent() {
         .getPublicUrl(filePath);
 
       // 3. Calculate points per activity and combine them
+      let totalDistance = 0;
+      let totalDuration = 0;
       let totalPointsToAward = 0;
       const activityNames: string[] = [];
 
       selectedSports.forEach(sportId => {
         const activity = ACTIVITIES.find(a => a.id === sportId);
         const value = parseFloat(sportValues[sportId] || '0');
+        const distValue = parseFloat(sportDistances[sportId] || '0');
+        
         let points = 1;
 
         if (activity) {
           points = value / activity.factor;
           activityNames.push(activity.name);
+          
+          if (activity.metric === 'time') {
+            totalDuration += value;
+            if (distValue > 0) totalDistance += distValue;
+          } else {
+            totalDistance += value;
+          }
         }
         totalPointsToAward += points;
       });
@@ -437,6 +449,8 @@ function RegistroActivityContent() {
         group_id: groupId,
         activity_type: combinedActivityType,
         points: Number(totalPointsToAward.toFixed(2)),
+        duration_minutes: totalDuration > 0 ? totalDuration : null,
+        distance_km: totalDistance > 0 ? totalDistance : null,
         proof_url: publicUrl,
         device_info: deviceInfo,
       };
@@ -593,17 +607,34 @@ function RegistroActivityContent() {
                             <p className="text-[10px] text-[#606070] font-bold uppercase tracking-widest">{activity?.description}</p>
                           </div>
                         </div>
-                        <div className="relative">
-                          <input 
-                            type="number"
-                            placeholder={`Qtd em ${activity?.unit}`}
-                            value={sportValues[sportId] || ''}
-                            onChange={(e) => setSportValues({ ...sportValues, [sportId]: e.target.value })}
-                            className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-black"
-                          />
-                          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#303035] uppercase tracking-widest">
-                            {activity?.unit}
-                          </span>
+                        <div className="space-y-3">
+                          <div className="relative">
+                            <input 
+                              type="number"
+                              placeholder={`Qtd em ${activity?.unit}`}
+                              value={sportValues[sportId] || ''}
+                              onChange={(e) => setSportValues({ ...sportValues, [sportId]: e.target.value })}
+                              className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-black"
+                            />
+                            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#303035] uppercase tracking-widest">
+                              {activity?.unit}
+                            </span>
+                          </div>
+
+                          {activity?.id === 'esteira' && (
+                            <div className="relative">
+                              <input 
+                                type="number"
+                                placeholder="Distância opcional (KM)"
+                                value={sportDistances[sportId] || ''}
+                                onChange={(e) => setSportDistances({ ...sportDistances, [sportId]: e.target.value })}
+                                className="w-full bg-black/40 border border-[#CCCC00]/10 rounded-xl px-4 py-3 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-black text-sm"
+                              />
+                              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#CCCC00]/40 uppercase tracking-widest">
+                                KM
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
