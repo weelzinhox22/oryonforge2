@@ -319,6 +319,19 @@ function RegistroActivityContent() {
       setToast({ isVisible: true, message: 'Selecione pelo menos uma atividade.', type: 'error' });
       return;
     }
+
+    const hasMissingValues = selectedSports.some(sportId => {
+      const val = sportValues[sportId];
+      if (!val) return true;
+      const num = parseFloat(val);
+      return isNaN(num) || num <= 0;
+    });
+
+    if (hasMissingValues) {
+      setToast({ isVisible: true, message: 'Preencha a duração ou distância de todas as atividades.', type: 'error' });
+      return;
+    }
+
     if (proofFiles.length === 0) {
       setToast({ isVisible: true, message: 'A Comprovação visual é obrigatória.', type: 'error' });
       return;
