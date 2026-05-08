@@ -139,16 +139,29 @@ export default function NotificationCenter() {
                   notifications.map((n) => (
                     <div 
                       key={n.id}
-                      className={`p-6 border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors flex gap-5 ${!n.is_read ? 'bg-[#CCCC00]/5' : ''}`}
+                      className={`p-6 border-b border-white/[0.03] hover:bg-white/[0.04] transition-all flex gap-5 relative group ${!n.is_read ? 'bg-[#CCCC00]/[0.03]' : ''}`}
                     >
-                      <div className="w-10 h-10 rounded-[18px] bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                        {getIcon(n.type)}
+                      {!n.is_read && (
+                        <div className="absolute left-0 top-0 w-1 h-full bg-[#CCCC00] shadow-[0_0_15px_rgba(204,204,0,0.5)]" />
+                      )}
+                      
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#CCCC00]/30 transition-all">
+                        <div className="transform group-hover:scale-110 transition-transform">
+                          {getIcon(n.type)}
+                        </div>
                       </div>
-                      <div className="flex-1 space-y-1.5">
-                        <p className="text-[12px] font-bold text-white leading-tight">{n.title}</p>
-                        <p className="text-[11px] text-[#606070] font-medium leading-relaxed">{n.content}</p>
-                        <p className="text-[9px] text-[#303035] font-black uppercase tracking-[0.1em] pt-1">
-                          {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
+                      
+                      <div className="flex-1 space-y-1">
+                        <div className="flex justify-between items-start gap-2">
+                          <p className="text-[11px] font-black text-white uppercase tracking-tight leading-tight">
+                            {n.title}
+                          </p>
+                          <span className="text-[8px] text-[#303035] font-black uppercase tracking-widest shrink-0">
+                            {formatDistanceToNow(new Date(n.created_at), { addSuffix: false, locale: ptBR })}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#606070] font-bold leading-relaxed">
+                          {n.content}
                         </p>
                       </div>
                     </div>

@@ -198,7 +198,7 @@ export default function LobbyView({
                   <span className="flex items-center gap-2">
                     Olá, {userProfile?.username || 'Usuário'}
                     <span className="px-1.5 py-0.5 bg-[#CCCC00]/10 border border-[#CCCC00]/20 rounded text-[8px] font-black text-[#CCCC00] uppercase">
-                      LVL {userProfile?.level || 1}
+                      LVL {Math.floor(totalXP / 10) + 1}
                     </span>
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/10" />
@@ -333,7 +333,7 @@ export default function LobbyView({
                      <div className="text-left md:text-right">
                         <div className="text-[10px] font-black text-[#606070] uppercase tracking-[0.2em] mb-1">Status de Evolução</div>
                         <div className="flex items-center gap-2">
-                           <span className="text-2xl font-black text-white italic tracking-tighter">LVL {userProfile?.level || 1}</span>
+                           <span className="text-2xl font-black text-white italic tracking-tighter">LVL {Math.floor(totalXP / 10) + 1}</span>
                            <div className="w-[1px] h-4 bg-white/10" />
                            <span className="text-sm font-black text-[#CCCC00] italic tracking-tighter">{totalXP} XP TOTAL</span>
                         </div>
@@ -344,12 +344,12 @@ export default function LobbyView({
                   <div className="space-y-3">
                      <div className="flex justify-between items-end">
                         <span className="text-[9px] font-black text-[#303035] uppercase tracking-[0.3em]">Próximo Nível</span>
-                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{totalXP % 500} / 500 XP</span>
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest">{totalXP % 10} / 10 XP</span>
                      </div>
                      <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
                         <motion.div 
                            initial={{ width: 0 }}
-                           animate={{ width: `${(totalXP % 500) / 500 * 100}%` }}
+                           animate={{ width: `${(totalXP % 10) / 10 * 100}%` }}
                            transition={{ duration: 1, ease: "easeOut" }}
                            className="h-full bg-gradient-to-r from-[#CCCC00] to-[#888800] rounded-full shadow-[0_0_10px_rgba(204,204,0,0.3)]"
                         />

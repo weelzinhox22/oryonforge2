@@ -25,15 +25,17 @@ export default function IndividualAchievementsPage() {
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const fetchAchievements = async () => {
+    const fetchAchievementsData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         router.push('/login');
         return;
       }
 
+      const u_id = session.user.id;
+
       try {
-        // Fetch all individual achievements
+        // 1. Fetch all individual achievements
         const { data: allAchievements, error: allErr } = await supabase
           .from('achievements')
           .select('*')
@@ -41,17 +43,70 @@ export default function IndividualAchievementsPage() {
         
         if (allErr) throw allErr;
         
-        // Fetch user unlocked achievements
+        // 2. Fetch user unlocked achievements
         const { data: unlocked, error: unlErr } = await supabase
           .from('user_achievements')
           .select('achievement_id')
-          .eq('user_id', session.user.id);
+          .eq('user_id', u_id);
         
         if (unlErr) throw unlErr;
         
         const ids = new Set(unlocked?.map(u => u.achievement_id) || []);
+
+        // 3. Fetch User Stats for Progress Calculation
+        const { data: logStats } = await supabase
+          .from('activity_logs')
+          .select('points, activity_type, distance_km, proof_url, weather_status, created_at')
+          .eq('user_id', u_id);
+
+        const { data: streakData } = await supabase.rpc('calculate_user_streak', { u_id });
+        const { data: groupsCreated } = await supabase.from('groups').select('id', { count: 'exact' }).eq('admin_id', u_id);
+        const { data: loginStats } = await supabase.from('user_logins').select('id', { count: 'exact' }).eq('user_id', u_id);
         
-        setAchievements(allAchievements || []);
+        const stats = {
+          points: logStats?.reduce((acc, curr) => acc + (curr.points || 0), 0) || 0,
+          workouts: logStats?.length || 0,
+          streak: streakData || 0,
+          distance: logStats?.reduce((acc, curr) => acc + (Number(curr.distance_km) || 0), 0) || 0,
+          uploads: logStats?.filter(l => l.proof_url).length || 0,
+          activity_types: new Set(logStats?.map(l => l.activity_type)).size || 0,
+          rainy_workouts: new Set(logStats?.filter(l => l.weather_status === 'rain').map(l => l.created_at.split('T')[0])).size || 0,
+          app_opens: loginStats?.length || 0,
+          likes_received: 0, 
+          comments: 0,
+          groups_created: groupsCreated?.length || 0
+        };
+
+        // 4. Map achievements with progress
+        const achievementsWithProgress = allAchievements?.map(ach => {
+          let current = 0;
+          switch (ach.requirement_type) {
+            case 'points': current = stats.points; break;
+            case 'workouts': current = stats.workouts; break;
+            case 'streak': current = stats.streak; break;
+            case 'distance': current = stats.distance; break;
+            case 'uploads': current = stats.uploads; break;
+            case 'activity_types': current = stats.activity_types; break;
+            case 'rainy_workouts': 
+            case 'weather_rain': 
+              current = stats.rainy_workouts; break;
+            case 'app_opens':
+            case 'opens':
+            case 'logins':
+              current = stats.app_opens;
+              break;
+            case 'app_opens_no_activity':
+              current = 0; // Requires deep login tracking
+              break;
+            case 'groups_created': current = stats.groups_created; break;
+            default: current = 0;
+          }
+
+          const progress = Math.min(100, Math.floor((current / ach.requirement_value) * 100));
+          return { ...ach, current, progress };
+        });
+        
+        setAchievements(achievementsWithProgress || []);
         setUnlockedIds(ids);
       } catch (err) {
         console.error('Erro ao buscar conquistas:', err);
@@ -60,7 +115,7 @@ export default function IndividualAchievementsPage() {
       }
     };
 
-    fetchAchievements();
+    fetchAchievementsData();
   }, [supabase, router]);
 
   if (isLoading) {
@@ -181,8 +236,21 @@ export default function IndividualAchievementsPage() {
                         <span className="text-[9px] font-black text-[#CCCC00] uppercase tracking-widest">Conquistado</span>
                       </div>
                     ) : (
-                      <div className="w-full bg-white/5 h-1 rounded-full overflow-hidden">
-                        <div className="w-0 h-full bg-[#CCCC00]" />
+                      <div className="w-full mt-2">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[9px] font-bold text-[#404045] uppercase tracking-widest">Progresso</span>
+                          <span className="text-[9px] font-black text-[#808090]">
+                            {achievement.current} / {achievement.requirement_value} ({achievement.progress}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${achievement.progress}%` }}
+                            transition={{ duration: 1, ease: "easeOut" }}
+                            className="h-full bg-[#CCCC00] shadow-[0_0_10px_rgba(204,204,0,0.3)]" 
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

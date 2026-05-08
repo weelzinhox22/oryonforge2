@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ChevronLeft, Calendar, Trophy, 
   Users, Save, AlertTriangle, Clock,
   UserCheck, Shield, ShieldAlert,
-  Image as ImageIcon
+  Image as ImageIcon, Trash2
 } from 'lucide-react';
 import { Outfit, Sora } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
@@ -32,6 +33,7 @@ export default function GroupSettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeGroup, setActiveGroup] = useState<any>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string>('member');
   const [members, setMembers] = useState<any[]>([]);
   
@@ -42,6 +44,7 @@ export default function GroupSettingsPage() {
   const [periodDays, setPeriodDays] = useState<number>(45);
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +53,7 @@ export default function GroupSettingsPage() {
         router.push('/login');
         return;
       }
+      setCurrentUserId(session.user.id);
 
       // Fetch group and current user role
       const { data: membership } = await supabase
@@ -138,6 +142,29 @@ export default function GroupSettingsPage() {
       setToast({ isVisible: true, message: `Membro atualizado para ${newRole}!`, type: 'success' });
     } catch (error: any) {
       setToast({ isVisible: true, message: 'Erro ao alterar cargo.', type: 'error' });
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    setIsDeleteModalOpen(false);
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('groups')
+        .delete()
+        .eq('id', groupId);
+
+      if (error) throw error;
+
+      setToast({ isVisible: true, message: 'Grupo excluído com sucesso!', type: 'success' });
+      
+      // Redirect to main dashboard after a short delay
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 2000);
+    } catch (error: any) {
+      setToast({ isVisible: true, message: error.message || 'Erro ao excluir grupo.', type: 'error' });
+      setIsUpdating(false);
     }
   };
 
@@ -339,12 +366,92 @@ export default function GroupSettingsPage() {
                 </div>
               </div>
 
+              {/* Zona de Risco - Apenas para o Dono do Grupo */}
+              {activeGroup.admin_id === currentUserId && (
+                <div className="space-y-8 pt-12 border-t border-red-500/10">
+                  <div className="flex items-center gap-3">
+                    <AlertTriangle size={18} className="text-red-500/60" />
+                    <h3 className="text-[11px] font-black text-red-500/60 uppercase tracking-[0.3em]">Zona de Risco</h3>
+                  </div>
+
+                  <div className="p-8 rounded-[2rem] bg-red-500/[0.02] border border-red-500/10 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-center md:text-left">
+                      <h4 className="text-sm font-black text-white uppercase tracking-tight mb-1 italic">Excluir este Grupo</h4>
+                      <p className="text-[10px] text-[#606070] font-bold uppercase tracking-widest max-w-[300px]">
+                        Esta ação é irreversível. Todos os dados de todos os membros serão apagados.
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={() => setIsDeleteModalOpen(true)}
+                      disabled={isUpdating}
+                      className="w-full md:w-auto px-8 py-4 bg-red-600/10 hover:bg-red-600 text-red-600 hover:text-white border border-red-600/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                    >
+                      <Trash2 size={16} strokeWidth={3} />
+                      {isUpdating ? 'Excluindo...' : 'Excluir Grupo Permanentemente'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </section>
           </div>
         </div>
       </main>
 
       <BottomNav />
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center px-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-md bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] p-10 shadow-3xl overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1 bg-red-600" />
+              
+              <div className="w-16 h-16 rounded-3xl bg-red-600/10 flex items-center justify-center text-red-500 mb-8 mx-auto">
+                <AlertTriangle size={32} />
+              </div>
+
+              <div className="text-center space-y-4 mb-10">
+                <h3 className={`text-xl font-black text-white uppercase italic ${sora.className}`}>
+                  Excluir Grupo?
+                </h3>
+                <p className="text-sm text-[#606070] font-medium leading-relaxed">
+                  Esta ação é <span className="text-red-500 font-bold">irreversível</span>. 
+                  Todos os treinos, rankings e conquistas dos membros serão apagados permanentemente.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleDeleteGroup}
+                  className="w-full py-5 bg-red-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-red-700 transition-all active:scale-95"
+                >
+                  Sim, Excluir Tudo
+                </button>
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="w-full py-5 bg-white/5 text-[#808090] font-black text-xs uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 transition-all active:scale-95"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <Toast
         isVisible={toast.isVisible}

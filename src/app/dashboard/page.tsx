@@ -34,6 +34,15 @@ export default function DashboardIndexPage() {
       if (!session && isMounted) {
         router.push('/login');
       } else if (session) {
+        // Track app open for achievements
+        try {
+          await supabase.from('user_logins').insert({ user_id: session.user.id });
+          // Process achievements check for login-based ones
+          await supabase.rpc('process_user_achievements_logic', { u_id: session.user.id });
+        } catch (e) {
+          console.error('Error tracking login:', e);
+        }
+        
         await fetchUserData(session.user.id);
         setIsLoading(false);
       } else {

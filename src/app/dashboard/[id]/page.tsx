@@ -127,7 +127,7 @@ export default function GroupDashboardPage() {
             points: m.adjustment_points || 0,
             userId: m.user_id,
             adjustment: m.adjustment_points || 0,
-            level: profile?.level || 1,
+            level: Math.floor((m.adjustment_points || 0) / 10) + 1,
             title: profile?.active_title || profile?.title || 'Recruta',
             avatarUrl: profile?.avatar_url
           };
@@ -147,6 +147,8 @@ export default function GroupDashboardPage() {
         logsData.forEach((log: any) => {
           if (scores[log.user_id]) {
             scores[log.user_id].points += log.points;
+            // Update level dynamically based on new points (10 pts per level)
+            scores[log.user_id].level = Math.floor(scores[log.user_id].points / 10) + 1;
           }
           
           const logDate = new Date(log.created_at);
