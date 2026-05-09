@@ -48,6 +48,33 @@ export default function DashboardView({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [dynamicMessage, setDynamicMessage] = useState<string>('');
+
+  useEffect(() => {
+    const fetchGreeting = async () => {
+      try {
+        const response = await fetch('/api/generate-greeting', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: userProfile?.username,
+            streak,
+            dailyPoints,
+            dailyGoal,
+            ranking
+          })
+        });
+        const data = await response.json();
+        if (data.message) setDynamicMessage(data.message);
+      } catch (err) {
+        console.error('Error fetching AI greeting:', err);
+      }
+    };
+
+    if (userProfile?.username && activeGroup) {
+      fetchGreeting();
+    }
+  }, [userProfile?.username, streak, dailyPoints, activeGroup?.id]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -230,10 +257,10 @@ export default function DashboardView({
                     })()},<br />
                     <span className="font-semibold text-white">{userProfile?.username || 'Atleta'}</span>
                   </h1>
-                  <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed">
-                    {streak > 0 
-                      ? `Você está mantendo o ritmo com ${streak} dias de consistência. Continue superando seus limites.` 
-                      : 'Hoje é um ótimo dia para iniciar sua jornada. Registre uma atividade.'}
+                  <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]">
+                    {dynamicMessage || (streak > 0 
+                      ? `${streak} dias seguidos? O sedentário que habita em você está morrendo de medo.` 
+                      : 'Hoje é um ótimo dia para iniciar sua jornada. Registre uma atividade.')}
                   </p>
                 </div>
 

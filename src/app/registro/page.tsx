@@ -16,6 +16,7 @@ import { ACTIVITIES } from '@/lib/activities';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { DotLottiePlayer } from '@dotlottie/react-player';
 import { sounds } from '@/lib/sounds';
+import ActivitySuccessModal from '@/components/ActivitySuccessModal';
 
 const ICON_MAP: Record<string, any> = {
   musculacao: Dumbbell,
@@ -191,6 +192,8 @@ function RegistroActivityContent() {
   const [toast, setToast] = useState<{ isVisible: boolean; message: string; type: 'error' | 'success' }>({
     isVisible: false, message: '', type: 'error'
   });
+  const [successData, setSuccessData] = useState<any>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
@@ -465,15 +468,33 @@ function RegistroActivityContent() {
         return;
       }
 
-      const { error } = await supabase.from('activity_logs').insert([logInsert]);
+      const { data: insertedLog, error } = await supabase.from('activity_logs').insert([logInsert]).select('id').single();
 
       if (error) throw error;
 
+      // 4. Fetch Fun Facts for the new log
+      if (insertedLog) {
+        const { data: feedback } = await supabase.rpc('get_activity_context_feedback', {
+          u_id: session.user.id,
+          g_id: groupId,
+          log_id: insertedLog.id
+        });
+
+        if (feedback) {
+          setSuccessData({ ...feedback, points: totalPointsToAward });
+          setIsSuccessModalOpen(true);
+        } else {
+          setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas! Total: ${totalPointsToAward.toFixed(2)} pts`, type: 'success' });
+          await new Promise(r => setTimeout(r, 1500));
+          router.push(`/dashboard/${groupId}`);
+        }
+      } else {
+        setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas!`, type: 'success' });
+        await new Promise(r => setTimeout(r, 1500));
+        router.push(`/dashboard/${groupId}`);
+      }
+
       sounds.playSuccess();
-      setToast({ isVisible: true, message: `${selectedSports.length} atividades registradas! Total: ${totalPointsToAward.toFixed(2)} pts`, type: 'success' });
-      
-      await new Promise(r => setTimeout(r, 1500));
-      router.push(`/dashboard/${groupId}`);
       
     } catch (err: any) {
       setToast({ isVisible: true, message: err.message || 'Erro ao registrar.', type: 'error' });
@@ -762,11 +783,13 @@ function RegistroActivityContent() {
         </div>
       </main>
 
-      <Toast
-        isVisible={toast.isVisible}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast({ ...toast, isVisible: false })}
+      <ActivitySuccessModal 
+        isOpen={isSuccessModalOpen}
+        onClose={() => {
+          setIsSuccessModalOpen(false);
+          router.push(`/dashboard/${groupId}`);
+        }}
+        data={successData}
       />
 
     </div>
