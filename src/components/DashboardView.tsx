@@ -49,10 +49,19 @@ export default function DashboardView({
   const [editValue, setEditValue] = useState<string>('');
   const [pushEnabled, setPushEnabled] = useState(true);
   const [dynamicMessage, setDynamicMessage] = useState<string>('');
+  // mounted guard: prevents hydration mismatch from dynamic content
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     const fetchGreeting = async () => {
-      console.log('[Dashboard] Fetching AI greeting...');
+      const rankingPayload = ranking.map((r) => ({ username: r.username, points: r.points }));
+      console.log('[Dashboard] Fetching greeting. User:', userProfile?.username, '| Ranking sample:', rankingPayload.slice(0, 3));
       try {
         const response = await fetch('/api/generate-greeting', {
           method: 'POST',
@@ -63,10 +72,10 @@ export default function DashboardView({
             streak,
             dailyPoints,
             dailyGoal,
-            ranking
-          })
+            ranking: rankingPayload,
+          }),
         });
-        
+
         if (!response.ok) {
           const errData = await response.json();
           console.error('[Dashboard] API Error:', errData);
@@ -74,7 +83,7 @@ export default function DashboardView({
         }
 
         const data = await response.json();
-        console.log('[Dashboard] AI Greeting Received:', data.message);
+        console.log('[Dashboard] Greeting received:', data.message);
         if (data.message) setDynamicMessage(data.message);
       } catch (err) {
         console.error('[Dashboard] Fetch Error:', err);
@@ -84,7 +93,7 @@ export default function DashboardView({
     if (userProfile?.username && activeGroup) {
       fetchGreeting();
     }
-  }, [userProfile?.username, streak, dailyPoints, activeGroup?.id]);
+  }, [mounted, userProfile?.username, streak, dailyPoints, activeGroup?.id]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -267,8 +276,11 @@ export default function DashboardView({
                     })()},<br />
                     <span className="font-semibold text-white">{userProfile?.username || 'Atleta'}</span>
                   </h1>
-                  <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]">
-                    {dynamicMessage ? (
+                  <p
+                    suppressHydrationWarning
+                    className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]"
+                  >
+                    {mounted && dynamicMessage ? (
                       dynamicMessage
                     ) : (
                       <span className="opacity-40 animate-pulse flex items-center gap-2 italic">
