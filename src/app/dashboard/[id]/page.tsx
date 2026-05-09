@@ -47,7 +47,7 @@ export default function GroupDashboardPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [router, supabase, groupId]);
+  }, [router, groupId, isMounted]); // Removed supabase to prevent infinite loop
 
   const fetchGroupData = async (userId: string, targetGroupId: string) => {
     setIsLoading(true);

@@ -640,7 +640,7 @@ export default function LobbyView({
 
             <div className="grid grid-cols-3 gap-3 md:gap-6">
               {[
-                { id: 'bike-rua', title: 'Bike', lottie: '/Cycling.lottie', desc: 'Outdoor' },
+                { id: 'bike-rua', title: 'Bike', lottie: '/cycling.lottie', desc: 'Outdoor' },
                 { id: 'esteira', title: 'Treadmill', lottie: '/esteira.lottie', desc: 'Indoor' },
                 { id: 'corrida', title: 'Running', lottie: '/runing.lottie', desc: 'Pace' },
               ].map((mod) => (

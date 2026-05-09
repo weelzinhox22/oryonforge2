@@ -59,7 +59,7 @@ export default function DashboardIndexPage() {
     });
 
     return () => subscription.unsubscribe();
-  }, [router, supabase]);
+  }, [router, isMounted]); // Removed supabase from dependencies to prevent infinite loop
 
   const fetchUserData = async (userId: string, silent = false) => {
     if (!silent) setIsLoading(true);
@@ -80,11 +80,14 @@ export default function DashboardIndexPage() {
         .select('group_id, role, groups (*)')
         .eq('user_id', userId);
 
-      // Fetch last activity date for each group to sort
+      // Activity Feed filtered to groups the user belongs to
+      const userGroupIds = (groupsData || []).map((ug: any) => ug.group_id);
+
+      // Fetch last activity date for each group (by ANY member) to sort and display accurately
       const { data: lastActivities } = await supabase
         .from('activity_logs')
         .select('group_id, created_at')
-        .eq('user_id', userId)
+        .in('group_id', userGroupIds)
         .order('created_at', { ascending: false });
 
       const lastActivityMap: Record<string, string> = {};
@@ -122,9 +125,6 @@ export default function DashboardIndexPage() {
       
       const totalXP = totalPointsData?.reduce((acc, log) => acc + log.points, 0) || 0;
       setTotalXP(totalXP);
-
-      // Activity Feed filtered to groups the user belongs to
-      const userGroupIds = (groupsData || []).map((ug: any) => ug.group_id);
 
       if (userGroupIds.length > 0) {
         const { data: feedData } = await supabase
