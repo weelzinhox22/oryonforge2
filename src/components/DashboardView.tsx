@@ -268,9 +268,14 @@ export default function DashboardView({
                     <span className="font-semibold text-white">{userProfile?.username || 'Atleta'}</span>
                   </h1>
                   <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]">
-                    {dynamicMessage || (streak > 0 
-                      ? `${streak} dias seguidos? O sedentário que habita em você está morrendo de medo.` 
-                      : 'Hoje é um ótimo dia para iniciar sua jornada. Registre uma atividade.')}
+                    {dynamicMessage ? (
+                      dynamicMessage
+                    ) : (
+                      <span className="opacity-40 animate-pulse flex items-center gap-2 italic">
+                        <Activity size={14} />
+                        Analisando seu desempenho...
+                      </span>
+                    )}
                   </p>
                 </div>
 
