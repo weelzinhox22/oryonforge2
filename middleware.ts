@@ -8,9 +8,17 @@ export async function middleware(request: NextRequest) {
     },
   });
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Se as variáveis não existirem, deixa o request passar sem quebrar o middleware
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return response;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {
@@ -54,7 +62,12 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getSession();
+  // Verificação segura da sessão
+  try {
+    await supabase.auth.getSession();
+  } catch (e) {
+    console.error('Middleware Auth Error:', e);
+  }
 
   return response;
 }
