@@ -52,22 +52,32 @@ export default function DashboardView({
 
   useEffect(() => {
     const fetchGreeting = async () => {
+      console.log('[Dashboard] Fetching AI greeting...');
       try {
         const response = await fetch('/api/generate-greeting', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             username: userProfile?.username,
+            avatarUrl: userProfile?.avatar_url,
             streak,
             dailyPoints,
             dailyGoal,
             ranking
           })
         });
+        
+        if (!response.ok) {
+          const errData = await response.json();
+          console.error('[Dashboard] API Error:', errData);
+          return;
+        }
+
         const data = await response.json();
+        console.log('[Dashboard] AI Greeting Received:', data.message);
         if (data.message) setDynamicMessage(data.message);
       } catch (err) {
-        console.error('Error fetching AI greeting:', err);
+        console.error('[Dashboard] Fetch Error:', err);
       }
     };
 
