@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
+import {
   ChevronLeft, Activity, Trophy,
   Plus, Target, Medal, UserPlus,
   Image as ImageIcon, Edit2, Save, X, Settings, Clock, BellRing
@@ -14,6 +14,9 @@ import Image from 'next/image';
 import { DotLottiePlayer } from '@dotlottie/react-player';
 import { useState, useEffect } from 'react';
 import NotificationCenter from './NotificationCenter';
+import dynamic from 'next/dynamic';
+
+const DynamicGreeting = dynamic(() => import('./DynamicGreeting'), { ssr: false });
 
 const sora = Sora({ subsets: ['latin'], weight: ['300', '400', '500', '600', '700'] });
 
@@ -48,52 +51,6 @@ export default function DashboardView({
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [dynamicMessage, setDynamicMessage] = useState<string>('');
-  // mounted guard: prevents hydration mismatch from dynamic content
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-
-    const fetchGreeting = async () => {
-      const rankingPayload = ranking.map((r) => ({ username: r.username, points: r.points }));
-      console.log('[Dashboard] Fetching greeting. User:', userProfile?.username, '| Ranking sample:', rankingPayload.slice(0, 3));
-      try {
-        const response = await fetch('/api/generate-greeting', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            username: userProfile?.username,
-            avatarUrl: userProfile?.avatar_url,
-            streak,
-            dailyPoints,
-            dailyGoal,
-            ranking: rankingPayload,
-          }),
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          console.error('[Dashboard] API Error:', errData);
-          return;
-        }
-
-        const data = await response.json();
-        console.log('[Dashboard] Greeting received:', data.message);
-        if (data.message) setDynamicMessage(data.message);
-      } catch (err) {
-        console.error('[Dashboard] Fetch Error:', err);
-      }
-    };
-
-    if (userProfile?.username && activeGroup) {
-      fetchGreeting();
-    }
-  }, [mounted, userProfile?.username, streak, dailyPoints, activeGroup?.id]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
@@ -276,18 +233,16 @@ export default function DashboardView({
                     })()},<br />
                     <span className="font-semibold text-white">{userProfile?.username || 'Atleta'}</span>
                   </h1>
-                  <p
-                    suppressHydrationWarning
-                    className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]"
-                  >
-                    {mounted && dynamicMessage ? (
-                      dynamicMessage
-                    ) : (
-                      <span className="opacity-40 animate-pulse flex items-center gap-2 italic">
-                        <Activity size={14} />
-                        Analisando seu desempenho...
-                      </span>
-                    )}
+                  <p className="text-[#808090] text-sm md:text-base mt-4 max-w-md font-light leading-relaxed min-h-[3em]">
+                    <DynamicGreeting
+                      username={userProfile?.username}
+                      avatarUrl={userProfile?.avatar_url}
+                      streak={streak}
+                      dailyPoints={dailyPoints}
+                      dailyGoal={dailyGoal}
+                      ranking={ranking}
+                      activeGroupId={activeGroup?.id}
+                    />
                   </p>
                 </div>
 

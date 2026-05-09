@@ -40,16 +40,16 @@ const MESSAGES_LEADER = [
 // These templates have {gap} and {userAbove} guaranteed.
 // ---------------------------------------------------------------------------
 const MESSAGES_CHASING_PREFIX = [
-  "Você está em {rank}º lugar —",
-  "Classificação em andamento, {name} —",
-  "Olha o ranking, {name}:",
-  "Vamos lá, {name}.",
-  "{name}, foco na próxima posição:",
-  "Você tem {streak} dias de sequência e",
-  "A virada está próxima —",
-  "Continue no ritmo.",
-  "{name}, cada treino conta:",
-  "A próxima posição é sua —",
+  "Tá na hora de subir no ranking, {name}!",
+  "Ei, {name}, bora ganhar pontos agora!",
+  "Vamos registrar esses treinos e subir, {name}!",
+  "Foco no topo, {name}!",
+  "A consistência é o caminho, {name}.",
+  "O pódio está te esperando, {name}.",
+  "Não para agora, {name}!",
+  "Bora buscar quem está na frente, {name}!",
+  "Cada ponto te deixa mais perto, {name}.",
+  "Ritmo de campeão, {name}!",
 ];
 
 const MESSAGES_CHASING_SUFFIX = [
@@ -110,7 +110,12 @@ function buildChasingFallback(
 ): string {
   const prefix = interpolate(pickFrom(MESSAGES_CHASING_PREFIX, seed), vars);
   const suffix = pickFrom(MESSAGES_CHASING_SUFFIX, seed + 1);
-  const core = `faltam ${vars.gap} pontos para alcançar ${vars.userAbove}.`;
+  
+  let core = `faltam ${vars.gap} pontos para alcançar ${vars.userAbove}.`;
+  if (Number(vars.gap) <= 0) {
+    core = `você empatou com ${vars.userAbove}! O próximo registro te coloca na frente.`;
+  }
+  
   return `${prefix} ${core} ${suffix}`;
 }
 
@@ -137,32 +142,37 @@ export async function POST(req: Request) {
     // Ranking context — computed deterministically
     // ------------------------------------------------------------------
     const rankingArr: { username: string; points: number }[] = ranking ?? [];
-
-    // Case-insensitive + trimmed match to handle any username inconsistencies
     const normalizedUsername = (username ?? '').trim().toLowerCase();
-    const userIdx = rankingArr.findIndex(
+
+    // 1. Try exact match (case-insensitive + trimmed)
+    let userIdx = rankingArr.findIndex(
       (r) => r.username.trim().toLowerCase() === normalizedUsername
     );
+
+    // 2. Fallback: Try partial match if exact match fails
+    if (userIdx === -1 && normalizedUsername) {
+      userIdx = rankingArr.findIndex(
+        (r) => {
+          const rName = r.username.trim().toLowerCase();
+          return rName.includes(normalizedUsername) || normalizedUsername.includes(rName);
+        }
+      );
+    }
+
     const userRankNum: number = userIdx >= 0 ? userIdx + 1 : 0;
     const userRank: number | string = userRankNum > 0 ? userRankNum : '?';
-
     const userPoints: number = rankingArr[userIdx]?.points ?? dailyPoints ?? 0;
 
     const aboveEntry = userIdx > 0 ? rankingArr[userIdx - 1] : null;
     const userAbove: string = aboveEntry?.username ?? '';
     const pointsGap: number =
-      aboveEntry != null ? Math.max(0, aboveEntry.points - userPoints) : 0;
+      aboveEntry != null ? Math.max(0, Math.ceil(aboveEntry.points - userPoints)) : 0;
 
     const leader: string = rankingArr[0]?.username ?? '';
     const second: string = rankingArr[1]?.username ?? '';
 
-    const groupContext = rankingArr
-      .slice(0, 5)
-      .map((r, i) => `${i + 1}º: ${r.username} (${r.points} pts)`)
-      .join(', ');
-
     console.log(
-      `[Greeting API] Rank context → user=${username} idx=${userIdx} rank=${userRankNum} pts=${userPoints} above=${userAbove} gap=${pointsGap} rankingSize=${rankingArr.length}`
+      `[Greeting API] Rank context → user=${username} normalized=${normalizedUsername} idx=${userIdx} rank=${userRankNum} pts=${userPoints} above=${userAbove} gap=${pointsGap}`
     );
 
     const seed = Date.now() + (username?.charCodeAt(0) ?? 0);
@@ -199,9 +209,10 @@ export async function POST(req: Request) {
 
 Regras absolutas:
 - Retorne APENAS a frase, sem aspas, sem explicações.
+- Termine a frase sempre com um ponto final (ou exclamação).
 - NUNCA use palavrões, xingamentos ou CAIXA ALTA excessiva.
 - NUNCA mencione "Oryon Forge" ou termos medievais.
-- Pode usar gírias naturais do Brasil (ex: "tá on", "mandou bem", "tá voando").`;
+- Use gírias naturais (ex: "tá on", "mandou bem") apenas se encaixarem organicamente no fluxo da frase. Evite frases que terminem abruptamente com a gíria sem conexão.`;
 
       try {
         const tryGroq = async (model: string) => {
@@ -236,11 +247,12 @@ Regras absolutas:
             let finalMessage: string;
 
             if (userRankNum === 1) {
-              // Leader: Groq already has full context
               finalMessage = groqSentence;
             } else if (userRankNum >= 2 && aboveEntry) {
-              // Chasing: we guarantee the gap info by appending it
-              finalMessage = `${groqSentence} Faltam ${pointsGap} pontos para alcançar ${userAbove}.`;
+              const gapInfo = pointsGap <= 0 
+                ? `Você empatou com ${userAbove}! O próximo registro te coloca na frente.`
+                : `Faltam ${pointsGap} pontos para alcançar ${userAbove}.`;
+              finalMessage = `${groqSentence} ${gapInfo}`;
             } else {
               finalMessage = groqSentence;
             }
