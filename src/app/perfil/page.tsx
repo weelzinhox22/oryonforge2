@@ -271,7 +271,7 @@ export default function ProfilePage() {
                         </h2>
                         <button 
                           onClick={() => setIsEditingName(true)}
-                          className="p-2 rounded-xl bg-white/5 text-[#606070] hover:text-[#CCCC00] hover:bg-[#CCCC00]/10 transition-all opacity-0 group-hover/name:opacity-100"
+                          className="p-2 rounded-xl bg-white/5 text-[#606070] hover:text-[#CCCC00] hover:bg-[#CCCC00]/10 transition-all shadow-sm"
                         >
                           <Pencil size={16} />
                         </button>
