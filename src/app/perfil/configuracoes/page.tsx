@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { 
   ChevronLeft, LayoutGrid, AlignLeft, 
   Settings, Check, Smartphone, 
-  Monitor, Bell, Shield, Palette
+  Monitor, Bell, Shield, Palette, User
 } from 'lucide-react';
 import { Sora, Outfit } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
@@ -23,6 +23,8 @@ export default function SettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
 
@@ -42,6 +44,8 @@ export default function SettingsPage() {
       
       if (data) {
         setUserProfile(data);
+        setFullName(data.full_name || '');
+        setUsername(data.username || '');
       }
       setIsLoading(false);
     };
@@ -101,6 +105,38 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim()) {
+      setToast({ isVisible: true, message: 'O nome não pode estar vazio.', type: 'error' });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          full_name: fullName,
+          username: username 
+        })
+        .eq('id', session.user.id);
+
+      if (error) throw error;
+
+      setUserProfile({ ...userProfile, full_name: fullName, username: username });
+      setToast({ isVisible: true, message: 'Perfil atualizado com sucesso!', type: 'success' });
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
+      setToast({ isVisible: true, message: 'Erro ao salvar alterações.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>
       <Sidebar onSignOut={() => supabase.auth.signOut()} />
@@ -125,6 +161,48 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-12">
+            
+            {/* Personal Info Section */}
+            <section className="space-y-6">
+              <div className="flex items-center gap-3 px-2">
+                <User size={18} className="text-[#CCCC00]" />
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Dados Pessoais</h2>
+              </div>
+              
+              <form onSubmit={handleUpdateProfile} className="p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 space-y-6">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-[#606070] uppercase tracking-widest ml-1">Nome Completo</label>
+                    <input 
+                      type="text" 
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Seu nome"
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-medium"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-[#606070] uppercase tracking-widest ml-1">Username / Nome de Exibição</label>
+                    <input 
+                      type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="@usuario"
+                      className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-[#CCCC00]/50 outline-none transition-all font-medium"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-[0.3em] bg-[#CCCC00] text-black hover:bg-[#b3b300] transition-all disabled:opacity-50 active:scale-[0.98]"
+                >
+                  {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
+                </button>
+              </form>
+            </section>
             
             {/* Visual Style Section */}
             <section className="space-y-6">
