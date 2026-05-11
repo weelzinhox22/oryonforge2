@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { 
   ChevronLeft, Camera, User, 
   Settings, LogOut, Check,
-  ShieldCheck, ArrowRight
+  ShieldCheck, ArrowRight, Pencil, X
 } from 'lucide-react';
 import { Sora, Outfit } from 'next/font/google';
 import Sidebar from '@/components/Sidebar';
@@ -39,6 +39,8 @@ export default function ProfilePage() {
   const [avatarCategory, setAvatarCategory] = useState<'male' | 'female'>('male');
   const [unlockedAchievements, setUnlockedAchievements] = useState<any[]>([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempName, setTempName] = useState('');
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'error' as 'error' | 'success' });
 
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function ProfilePage() {
       
       if (data) {
         setUserProfile(data);
+        setTempName(data.username || '');
         setSelectedAvatar(data.avatar_url);
         if (data.avatar_url?.includes('avatarsfemininos')) {
           setAvatarCategory('female');
@@ -150,6 +153,35 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSaveName = async () => {
+    if (!tempName.trim()) {
+      setToast({ isVisible: true, message: 'O nome não pode estar vazio.', type: 'error' });
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ username: tempName })
+        .eq('id', session.user.id);
+
+      if (error) throw error;
+
+      setUserProfile({ ...userProfile, username: tempName });
+      setIsEditingName(false);
+      setToast({ isVisible: true, message: 'Nome atualizado!', type: 'success' });
+    } catch (error) {
+      console.error('Erro ao atualizar nome:', error);
+      setToast({ isVisible: true, message: 'Erro ao atualizar nome.', type: 'error' });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
 
   return (
     <div className={`flex min-h-screen bg-[#000000] text-[#F0F0F6] ${outfit.className}`}>
@@ -203,12 +235,48 @@ export default function ProfilePage() {
 
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex flex-col md:flex-row items-center md:items-end gap-3 mb-2">
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-                      {userProfile?.username}
-                      {userProfile?.active_title && (
-                        <span className="text-[#606070] font-light text-xl lowercase ml-2">, {userProfile.active_title}</span>
-                      )}
-                    </h2>
+                    {isEditingName ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={tempName}
+                          onChange={(e) => setTempName(e.target.value)}
+                          autoFocus
+                          className="bg-white/5 border border-[#CCCC00]/30 rounded-xl px-4 py-2 text-2xl font-black text-white uppercase italic outline-none focus:border-[#CCCC00] transition-all w-full md:w-64"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveName();
+                            if (e.key === 'Escape') setIsEditingName(false);
+                          }}
+                        />
+                        <button 
+                          onClick={handleSaveName}
+                          className="w-10 h-10 rounded-xl bg-[#CCCC00] text-black flex items-center justify-center hover:bg-[#b3b300] transition-all"
+                        >
+                          <Check size={20} strokeWidth={3} />
+                        </button>
+                        <button 
+                          onClick={() => setIsEditingName(false)}
+                          className="w-10 h-10 rounded-xl bg-white/5 text-[#606070] flex items-center justify-center hover:bg-white/10 transition-all"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 group/name">
+                        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
+                          {userProfile?.username}
+                          {userProfile?.active_title && (
+                            <span className="text-[#606070] font-light text-xl lowercase ml-2">, {userProfile.active_title}</span>
+                          )}
+                        </h2>
+                        <button 
+                          onClick={() => setIsEditingName(true)}
+                          className="p-2 rounded-xl bg-white/5 text-[#606070] hover:text-[#CCCC00] hover:bg-[#CCCC00]/10 transition-all opacity-0 group-hover/name:opacity-100"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                      </div>
+                    )}
                     <span className="px-2 py-1 bg-[#CCCC00]/10 border border-[#CCCC00]/20 rounded-lg text-[10px] font-black text-[#CCCC00] uppercase mb-1">
                       LVL {userProfile?.level || 1}
                     </span>
